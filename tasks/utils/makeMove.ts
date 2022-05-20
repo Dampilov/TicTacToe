@@ -1,11 +1,11 @@
 import { task } from "hardhat/config"
 import "./getContract"
 
-task("makeMove", "makeMove")
-    .addOptionalParam("account", "Account")
-    .addParam("id", "ID of game")
-    .addParam("x", "ID of game")
-    .addParam("y", "ID of game")
+task("makeMove", "Make move by the ID of game")
+    .addOptionalParam("account", "ID of the account")
+    .addParam("id", "ID of the game")
+    .addParam("x", "one of the coordinates where you want to put your sign")
+    .addParam("y", "one of the coordinates where you want to put your sign")
     .setAction(async ({ account, id, x, y }, hre) => {
         const contract = await hre.run("get-contract", { name: "TicTacToe" })
         try {

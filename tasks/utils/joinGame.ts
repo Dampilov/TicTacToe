@@ -1,8 +1,8 @@
 import { task } from "hardhat/config"
 import "./getContract"
 
-task("joinGame", "Join")
-    .addOptionalParam("account", "Account")
+task("joinGame", "Join to the game by ID")
+    .addOptionalParam("account", "ID of the account")
     .addParam("id", "ID of game")
     .setAction(async ({ account, id }, hre) => {
         const contract = await hre.run("get-contract", { name: "TicTacToe" })

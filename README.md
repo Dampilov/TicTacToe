@@ -22,10 +22,10 @@ gas used: 1 817 139<br>
 $ npx hardhat createGame --days --hours --minutes
 ```
 
-Присоединиться к игре
+Присоединиться к игре. (--account) номер аккаунта из списка
 
 ```bash
-$ npx hardhat joinGame --id
+$ npx hardhat joinGame --id (--account)
 ```
 
 Посмотреть свободные игры
@@ -40,16 +40,16 @@ $ npx hardhat freeGames
 $ npx hardhat getGame --id
 ```
 
-Посмотреть свой знак (крестик или нолик) и твой ли ход сейчас. (--account) номер аккаунта из списка
+Посмотреть свой знак(крестик или нолик) в выбранной игре и твой ли ход сейчас. (--account) номер аккаунта из списка
 
 ```bash
-$ npx hardhat whoNext --id "(--account)"
+$ npx hardhat whoNext --id (--account)
 ```
 
 Сделать ход. (--account) номер аккаунта из списка
 
 ```bash
-$ npx hardhat makeMove --id --x --y "(--account)"
+$ npx hardhat makeMove --id --x --y (--account)
 ```
 
 Посмотреть статистику игр.<br>

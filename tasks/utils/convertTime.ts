@@ -2,8 +2,8 @@ import { subtask } from "hardhat/config"
 import { convert, duration } from "./time"
 import { BigNumber } from "ethers"
 
-subtask("convertTime", "Get game")
-    .addParam("time", "Time")
+subtask("convertTime", "Conver seconds to days, hours, minutes, etc")
+    .addParam("time", "Seconds to be converted")
     .setAction(async ({ time }, hre) => {
         let waiting = BigNumber.from(time)
 
