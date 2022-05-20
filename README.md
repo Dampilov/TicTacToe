@@ -52,12 +52,18 @@ $ npx hardhat whoNext --id "(--account)"
 $ npx hardhat makeMove --id --x --y "(--account)"
 ```
 
-Посмотреть статистику.<br>
+Посмотреть статистику игр.<br>
 id=0 - Статистика побед нулей<br>
 id=1 - Статистика побед крестиков<br>
 id=2 - Статистика ничьев<br>
-(--account) номер аккаунта из списка
 
 ```bash
-$ npx hardhat getStatistic --id "(--account)"
+$ npx hardhat getStatistic --id
+```
+
+Посмотреть статистику по адресу.<br>
+account - номер из списка signers
+
+```bash
+$ npx hardhat addressStatistic --account
 ```
