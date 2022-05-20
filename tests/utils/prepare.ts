@@ -1,5 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
 import { ethers } from "hardhat"
+import { Address } from "hardhat-deploy/dist/types"
 
 export async function prepareSigners(thisObject: Mocha.Context) {
     thisObject.signers = await ethers.getSigners()
@@ -11,18 +12,42 @@ export async function prepareSigners(thisObject: Mocha.Context) {
     thisObject.misha = thisObject.signers[5]
 }
 
-export async function prepareERC20Tokens(thisObject: Mocha.Context, signer: SignerWithAddress) {
-    const tokenFactory = await ethers.getContractFactory("ERC20Mock")
+export async function prepareTicTacToeTokens(thisObject: Mocha.Context, signer: SignerWithAddress) {
+    const tokenFactory = await ethers.getContractFactory("TicTacToe")
 
-    const token1 = await tokenFactory.connect(signer).deploy("Token1", "TKN1", ethers.utils.parseUnits("100000", 6))
-    await token1.deployed()
-    thisObject.token1 = token1
+    const TicTacToe = await tokenFactory.connect(signer).deploy()
+    await TicTacToe.deployed()
+    thisObject.token1 = TicTacToe
+}
 
-    const token2 = await tokenFactory.connect(signer).deploy("Token1", "TKN1", ethers.utils.parseUnits("100000", 6))
-    await token2.deployed()
-    thisObject.token2 = token2
+export const args = {
+    gameID: 0,
+    days: 0,
+    hours: 1,
+    minutes: 0,
+    x: [0, 1, 2],
+    y: [0, 1, 2],
+    percent: [0, 100],
+}
 
-    const token3 = await tokenFactory.connect(signer).deploy("Token1", "TKN1", ethers.utils.parseUnits("100000", 6))
-    await token3.deployed()
-    thisObject.token3 = token3
+export const game = {
+    state: {
+        free: 0,
+        playing: 1,
+        finished: 2,
+    },
+    cell: [
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0],
+    ],
+    isCrossMove: true,
+    sign: {
+        free: 0,
+        cross: 1,
+        zero: 2,
+        draw: 3,
+    },
+    waitingTime: 0,
+    lastActiveTime: 0,
 }

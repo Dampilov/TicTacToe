@@ -1,65 +1,63 @@
-# Smart contracts boilerplate
-## Installation
-```bash
-$ npm use
-```
+# TodoList
+
+Контракт крестики-нолики.
+Также в корне проекта должен быть файл .env содержащий PRIVATE_KEY - приватный ключ проекта Infura, и MNEMONIC - секретные слова от кошелька(те которые никто не должен узнать).<br/>
+Эти два параметра нужны при деплое контракта в тестовую сеть Ropsten.<br/>
+<br/>
+
+## Развернутый контракт в Ropsten:<br/>
+
+name: "TicTacToe"<br>
+address: 0x1071e8a2cbA02D81a4a3E910c3a9780E57027d17<br>
+Deployer: 0x45C942FCe98eFf30b6002F7c2fC4860547B542c9<br>
+tx: 0x159cd9ec543663f3e2dc5fb6a2adb0ed7a5531f6b39cbd4a712a3830596e184c)<br>
+ChainId: 3<br>
+gas used: 1 817 139<br>
+
+## Hardhat tasks:
+
+Создать игру
 
 ```bash
-$ npm install
+$ npx hardhat createGame --days --hours --minutes
 ```
 
-## Development
-
-### Creating smart contract
-Create your smart contract in `contracts/` folder 
-
-### Compilation
-Set solidity version in hardhat.config.ts file, solidity -> compilers -> version, then run compilation
+Присоединиться к игре
 
 ```bash
-$ npx hardhat compile
+$ npx hardhat joinGame --id
 ```
 
-### Running tests
-Create your tests in test folder. To set typed test, describe types in `test.config.d.ts`. Then, use it with Mocha.Context (this)
+Посмотреть свободные игры
 
-Run tests with command:
 ```bash
-$ npx hardhat test TEST_PATH
+$ npx hardhat freeGames
 ```
 
-Run tests and calculate gasPrice with command:
+Посмотреть игру по ID
+
 ```bash
-$ REPORT_GAS=true npx hardhat test
+$ npx hardhat getGame --id
 ```
 
-### Deploy
-Run deploy in hardhat network
+Посмотреть свой знак (крестик или нолик) и твой ли ход сейчас. (--account) номер аккаунта из списка
+
 ```bash
-$ npx hardhat deploy
+$ npx hardhat whoNext --id "(--account)"
 ```
 
-Run deploy in ropsten network
+Сделать ход. (--account) номер аккаунта из списка
+
 ```bash
-$ npm run deploy:ropsten 
+$ npx hardhat makeMove --id --x --y "(--account)"
 ```
 
-Run deploy in ropsten network for new contract
-```bash
-$ npm run deploy:ropsten:new
-```
-### Verification contract  
+Посмотреть статистику.<br>
+id=0 - Статистика побед нулей<br>
+id=1 - Статистика побед крестиков<br>
+id=2 - Статистика ничьев<br>
+(--account) номер аккаунта из списка
 
-Run verify in ropsten network
 ```bash
-$ npm run verify:ropsten
+$ npx hardhat getStatistic --id "(--account)"
 ```
-## Useful links
-1. Hardhat documentation:
-https://hardhat.org/getting-started/
-2. Style Guide:
-https://docs.soliditylang.org/en/v0.8.13/style-guide.html#style-guide
-3. Common Patterns:
-https://docs.soliditylang.org/en/v0.8.13/common-patterns.html
-4. Security Considerations:
-https://docs.soliditylang.org/en/v0.8.13/security-considerations.html#security-considerations
