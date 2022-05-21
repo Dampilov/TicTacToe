@@ -1,11 +1,11 @@
 import { task } from "hardhat/config"
-import "./getContract"
+import "./getTicTacToe"
 
 task("freeGames", "Get list of free games", async (taskArgs, hre) => {
-    const contract = await hre.run("get-contract", { name: "TicTacToe" })
+    const TicTacToe = await hre.run("getTicTacToe")
 
     try {
-        const games = await contract.freeGames()
+        const games = await TicTacToe.freeGames()
 
         for (const game of games) {
             const { years, weeks, days, hours, minutes, seconds } = await hre.run("convertTime", { time: game.waitingTime.toString() })
