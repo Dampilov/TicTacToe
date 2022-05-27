@@ -15,7 +15,7 @@ module.exports = async function (hre: HardhatRuntimeEnvironment) {
 
     await deploy("ERC20Mock", {
         args: [totalSupply],
-        gasLimit: 5000000000,
+        gasLimit: 30000000,
         from: deployer,
         log: true,
     })

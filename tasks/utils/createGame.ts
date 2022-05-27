@@ -1,12 +1,12 @@
 import { task } from "hardhat/config"
-import "./getTicTacToe"
+import "./getContract"
 
 task("createGame", "Start new game")
     .addOptionalParam("days", "Days for waiting to move")
     .addOptionalParam("hours", "Hours for waiting to move")
     .addParam("minutes", "Seconds for waiting to move")
     .setAction(async ({ days, hours, minutes }, hre) => {
-        const TicTacToe = await hre.run("getTicTacToe")
+        const TicTacToe = await hre.run("getTicTacToe", { name: "TicTacToe" })
 
         try {
             await TicTacToe.createGame(days || 0, hours || 0, minutes)

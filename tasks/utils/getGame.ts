@@ -1,10 +1,10 @@
 import { task } from "hardhat/config"
-import "./getTicTacToe"
+import "./getContract"
 
 task("getGame", "Get game information by ID")
     .addParam("id", "ID of game")
     .setAction(async ({ id }, hre) => {
-        const TicTacToe = await hre.run("getTicTacToe")
+        const TicTacToe = await hre.run("getTicTacToe", { name: "TicTacToe" })
 
         try {
             const game = await TicTacToe.games(id)

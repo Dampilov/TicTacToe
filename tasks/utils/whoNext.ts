@@ -1,11 +1,11 @@
 import { task } from "hardhat/config"
-import "./getTicTacToe"
+import "./getContract"
 
 task("whoNext", "what sign do you have in the selected game, and is it your turn now")
     .addOptionalParam("account", "ID of the account")
     .addParam("id", "ID of the game")
     .setAction(async ({ account, id }, hre) => {
-        const TicTacToe = await hre.run("getTicTacToe")
+        const TicTacToe = await hre.run("getTicTacToe", { name: "TicTacToe" })
 
         try {
             const accounts = await hre.ethers.getSigners()

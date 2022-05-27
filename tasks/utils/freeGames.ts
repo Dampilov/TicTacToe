@@ -1,8 +1,8 @@
 import { task } from "hardhat/config"
-import "./getTicTacToe"
+import "./getContract"
 
 task("freeGames", "Get list of free games", async (taskArgs, hre) => {
-    const TicTacToe = await hre.run("getTicTacToe")
+    const TicTacToe = await hre.run("getTicTacToe", { name: "TicTacToe" })
 
     try {
         const games = await TicTacToe.freeGames()

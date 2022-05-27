@@ -1,5 +1,5 @@
 import { task } from "hardhat/config"
-import "./getTicTacToe"
+import "./getContract"
 
 task("makeMove", "Make move by the ID of game")
     .addOptionalParam("account", "ID of the account")
@@ -7,7 +7,7 @@ task("makeMove", "Make move by the ID of game")
     .addParam("x", "one of the coordinates where you want to put your sign")
     .addParam("y", "one of the coordinates where you want to put your sign")
     .setAction(async ({ account, id, x, y }, hre) => {
-        const TicTacToe = await hre.run("getTicTacToe")
+        const TicTacToe = await hre.run("getTicTacToe", { name: "TicTacToe" })
 
         try {
             const accounts = await hre.ethers.getSigners()

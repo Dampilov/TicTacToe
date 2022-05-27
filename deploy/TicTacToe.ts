@@ -17,14 +17,14 @@ module.exports = async function (hre: HardhatRuntimeEnvironment) {
 
     const wallet = await deploy("Wallet", {
         args: [owners, requiredOwners],
-        gasLimit: 5000000,
+        gasLimit: 30000000,
         from: deployer,
         log: true,
     })
 
     await deploy("TicTacToe", {
         args: [wallet.address],
-        gasLimit: 5000000,
+        gasLimit: 30000000,
         from: deployer,
         log: true,
     })
