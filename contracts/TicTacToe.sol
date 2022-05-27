@@ -88,7 +88,7 @@ contract TicTacToe {
         wallet = _walletAddress;
     }
 
-    /// @notice Create new game
+    /// @notice Create new game from ether
     /// @param _days, _hours, _minutes - move waiting time
     function createGameFromEth(
         uint64 _days,
@@ -102,6 +102,8 @@ contract TicTacToe {
         _createGame(_days, _hours, _minutes, msg.value);
     }
 
+    /// @notice Create new game from ERC20 tokens
+    /// @param _days, _hours, _minutes - move waiting time
     function createGamefromERC20(
         address _token,
         uint64 _days,
@@ -117,7 +119,7 @@ contract TicTacToe {
         _createGame(_days, _hours, _minutes, _betAmount);
     }
 
-    /// @notice Join free game
+    /// @notice Join free game from ether
     function joinGameFromEth(uint256 _gameId) external payable GameIsFree(_gameId) GameExist(_gameId) {
         require(msg.sender != games[_gameId].owner, "Can't play with yourself");
         require(msg.value == games[_gameId].betSize, "Not correct bet size");
@@ -127,6 +129,7 @@ contract TicTacToe {
         _joinGame(_gameId);
     }
 
+    /// @notice Join free game from ERC20 tokens
     function joinGameFromERC20(uint256 _gameId, address _token) external GameIsFree(_gameId) GameExist(_gameId) {
         require(msg.sender != games[_gameId].owner, "Can't play with yourself");
         require(isERC20Game[_gameId], "Bet by ether");
@@ -153,7 +156,7 @@ contract TicTacToe {
         games[_gameId].isCrossMove = !games[_gameId].isCrossMove;
         games[_gameId].lastActiveTime = block.timestamp;
         emit MoveMade(_gameId, msg.sender, _x, _y, block.timestamp);
-        SquareState gameWinner = checkEndGame(games[_gameId], sign[msg.sender][_gameId], _x, _y);
+        SquareState gameWinner = _checkEndGame(games[_gameId], sign[msg.sender][_gameId], _x, _y);
         /// @dev If game is over
         if (gameWinner != SquareState.free) {
             _finishGame(_gameId, gameWinner);
@@ -175,6 +178,7 @@ contract TicTacToe {
         }
     }
 
+    /// @notice Withdraw ethers, if you won or game end in draw
     function withdrawETH(uint256 _gameId) external GameIsFinished(_gameId) onlyPlayer(_gameId) {
         require(canWithdraw[_gameId][msg.sender], "Can't withdraw");
         require(!isERC20Game[_gameId], "Bet by tokens");
@@ -192,6 +196,7 @@ contract TicTacToe {
         }
     }
 
+    /// @notice Withdraw ERC20 tokens, if you won or game end in draw
     function withdrawERC20(uint256 _gameId, address token) external GameIsFinished(_gameId) onlyPlayer(_gameId) {
         require(isERC20Game[_gameId], "Bet by ether");
         require(canWithdraw[_gameId][msg.sender], "Can't withdraw");
@@ -211,7 +216,7 @@ contract TicTacToe {
     /// @return freeGamesList - List of free games
     function freeGames() external view returns (Game[] memory freeGamesList) {
         /// @dev Number of free games
-        (uint256 gameCount, ) = getGamesByFilter(GameState.free, SquareState.free, address(0));
+        (uint256 gameCount, ) = _getGamesByFilter(GameState.free, SquareState.free, address(0));
         freeGamesList = new Game[](gameCount);
         uint256 counter;
         for (uint256 i; i < gameId; i++) {
@@ -225,21 +230,21 @@ contract TicTacToe {
     /// @return Percentage of games ending in a draw
     function getDrawGameStatistic() external view returns (uint256) {
         /// @dev Numbers of finished and ending in a draw games
-        (uint256 gameCount, uint256 signCount) = getGamesByFilter(GameState.finished, SquareState.draw, address(0));
+        (uint256 gameCount, uint256 signCount) = _getGamesByFilter(GameState.finished, SquareState.draw, address(0));
         return gameCount > 0 ? (signCount * 100) / gameCount : 0;
     }
 
     /// @return Percentage of games where the cross wins
     function getCrossGameStatistic() external view returns (uint256) {
         /// @dev Numbers of finished and the cross wins games
-        (uint256 gameCount, uint256 signCount) = getGamesByFilter(GameState.finished, SquareState.cross, address(0));
+        (uint256 gameCount, uint256 signCount) = _getGamesByFilter(GameState.finished, SquareState.cross, address(0));
         return gameCount > 0 ? (signCount * 100) / gameCount : 0;
     }
 
     /// @return Percentage of games where the zero wins
     function getZeroGameStatistic() external view returns (uint256) {
         /// @dev Numbers of finished and the zero wins games
-        (uint256 gameCount, uint256 signCount) = getGamesByFilter(GameState.finished, SquareState.zero, address(0));
+        (uint256 gameCount, uint256 signCount) = _getGamesByFilter(GameState.finished, SquareState.zero, address(0));
         return gameCount > 0 ? (signCount * 100) / gameCount : 0;
     }
 
@@ -247,7 +252,7 @@ contract TicTacToe {
     /// @return Percentage of games where the player wins
     function getStatisticByAddress(address _gamer) external view returns (uint256) {
         /// @dev Numbers of finished and the player wins games
-        (uint256 gameCount, uint256 signCount) = getGamesByFilter(GameState.finished, SquareState.free, _gamer);
+        (uint256 gameCount, uint256 signCount) = _getGamesByFilter(GameState.finished, SquareState.free, _gamer);
         return gameCount > 0 ? (signCount * 100) / gameCount : 0;
     }
 
@@ -262,6 +267,7 @@ contract TicTacToe {
         }
     }
 
+    /// @dev Create new game
     function _createGame(
         uint64 _days,
         uint64 _hours,
@@ -275,6 +281,7 @@ contract TicTacToe {
         gameId++;
     }
 
+    /// @dev Join player to some free game
     function _joinGame(uint256 _gameId) internal {
         games[_gameId].rival = msg.sender;
         sign[msg.sender][_gameId] = SquareState.zero;
@@ -283,6 +290,7 @@ contract TicTacToe {
         emit JoinedToGame(_gameId, msg.sender, block.timestamp, games[_gameId].betSize);
     }
 
+    /// @dev Finish game, and determine the winner
     function _finishGame(uint256 _gameId, SquareState winner) internal {
         games[_gameId].state = GameState.finished;
         games[_gameId].winner = winner;
@@ -302,7 +310,7 @@ contract TicTacToe {
     }
 
     /// @dev Get number of all games and number of games where the corresponding sign won
-    function getGamesByFilter(
+    function _getGamesByFilter(
         GameState _state,
         SquareState _sign,
         address _gamer
@@ -322,7 +330,7 @@ contract TicTacToe {
      If someone won, return his sign.
      If game over in draw, return SquareState.draw
      */
-    function checkEndGame(
+    function _checkEndGame(
         Game memory game,
         SquareState _sign,
         uint256 _x,
