@@ -11,23 +11,14 @@ module.exports = async function (hre: HardhatRuntimeEnvironment) {
 
     console.log(`Deployer: ${deployer} , balance: ${ethers.utils.formatEther(balance)} `)
 
-    const accounts = await ethers.getSigners()
-    const owners = [deployer, accounts[1].address, accounts[2].address]
-    const requiredOwners = 2
+    const totalSupply = ethers.utils.parseUnits("1000000", 6)
 
-    const wallet = await deploy("Wallet", {
-        args: [owners, requiredOwners],
-        gasLimit: 5000000,
-        from: deployer,
-        log: true,
-    })
-
-    await deploy("TicTacToe", {
-        args: [wallet.address],
-        gasLimit: 5000000,
+    await deploy("ERC20Mock", {
+        args: [totalSupply],
+        gasLimit: 5000000000,
         from: deployer,
         log: true,
     })
 }
 
-module.exports.tags = ["TicTacToe", "Wallet"]
+module.exports.tags = ["ERC20Mock"]

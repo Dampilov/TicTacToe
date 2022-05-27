@@ -7,13 +7,6 @@
 
 ## Развернутый контракт в Ropsten:<br/>
 
-name: "TicTacToe"<br>
-address: 0x1071e8a2cbA02D81a4a3E910c3a9780E57027d17<br>
-Deployer: 0x45C942FCe98eFf30b6002F7c2fC4860547B542c9<br>
-tx: 0x159cd9ec543663f3e2dc5fb6a2adb0ed7a5531f6b39cbd4a712a3830596e184c)<br>
-ChainId: 3<br>
-gas used: 1 817 139<br>
-
 ## Hardhat tasks:
 
 Создать игру

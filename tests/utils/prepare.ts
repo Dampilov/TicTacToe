@@ -17,7 +17,7 @@ export async function prepareTicTacToeTokens(thisObject: Mocha.Context, signer: 
     const ERC20Factory = await ethers.getContractFactory("ERC20Mock")
     const WalletFactory = await ethers.getContractFactory("Wallet")
 
-    const ERC20Mock = await ERC20Factory.connect(signer).deploy(ERC20Args.name, ERC20Args.symbol, ERC20Args.totalSupply)
+    const ERC20Mock = await ERC20Factory.connect(signer).deploy(ERC20Args.totalSupply)
     await ERC20Mock.deployed()
     thisObject.token2 = ERC20Mock
 
