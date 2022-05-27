@@ -1,14 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0
 
 pragma solidity >=0.7.0 <0.9.0;
+import "./Wallet.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @title TicTacToe contract
 /// @author Dampilov D.
 
 contract TicTacToe {
     uint256 gameId;
+    uint256 immutable commission;
+    address public owner;
+    address public wallet;
 
     mapping(uint256 => Game) public games;
+    mapping(uint256 => bool) public isERC20Game;
+    mapping(uint256 => mapping(address => bool)) canWithdraw;
 
     /// @notice Sign for gamer, cross or zero
     mapping(address => mapping(uint256 => SquareState)) public sign;
@@ -39,55 +46,95 @@ contract TicTacToe {
         address rival;
         uint256 waitingTime;
         uint256 lastActiveTime;
+        uint256 betSize;
     }
 
-    event GameCreated(uint256 indexed _gameId, address indexed owner, uint256 indexed waitingTime, uint256 createdTime);
-    event JoinedToGame(uint256 indexed _gameId, address indexed joined, SquareState joinedSign, uint256 indexed timeOfJoin);
+    event GameCreated(uint256 indexed _gameId, address indexed owner, uint256 indexed waitingTime, uint256 createdTime, uint256 betSize);
+    event JoinedToGame(uint256 indexed _gameId, address indexed joined, uint256 timeOfJoin, uint256 indexed betSize);
     event MoveMade(uint256 indexed _gameId, address indexed whoMoved, uint256 x, uint256 y, uint256 indexed timeOfMove);
     event GameResult(uint256 indexed _gameId, SquareState indexed winner, address indexed winnerAddress, uint256 finishedTime);
+    event Withdraw(uint256 indexed _gameId, address indexed recipient, uint256 indexed count);
 
     /// @dev Game should be free
-    modifier GameIsFree(uint256 _roomId) {
-        require(games[_roomId].state == GameState.free, "Not free game");
+    modifier GameIsFree(uint256 _gameId) {
+        require(games[_gameId].state == GameState.free, "Not free game");
         _;
     }
 
     /// @dev Already playing the game
-    modifier GameIsStarted(uint256 _roomId) {
-        require(games[_roomId].state == GameState.playing, "Don't being played");
+    modifier GameIsStarted(uint256 _gameId) {
+        require(games[_gameId].state == GameState.playing, "Don't being played");
         _;
+    }
+
+    modifier GameIsFinished(uint256 _gameId) {
+        require(games[_gameId].state == GameState.finished, "Unauthorized access");
+        _;
+    }
+
+    modifier onlyPlayer(uint256 _gameId) {
+        require(msg.sender == games[_gameId].owner || msg.sender == games[_gameId].rival, "Not your game");
+        _;
+    }
+
+    modifier GameExist(uint256 _gameId) {
+        require(_gameId < gameId, "Game not exist");
+        _;
+    }
+
+    constructor(address _walletAddress) {
+        commission = 5;
+        owner = msg.sender;
+        wallet = _walletAddress;
     }
 
     /// @notice Create new game
     /// @param _days, _hours, _minutes - move waiting time
-    function createGame(
+    function createGameFromEth(
         uint64 _days,
         uint64 _hours,
         uint64 _minutes
-    ) external {
-        SquareState[3][3] memory tictac;
-        games[gameId] = Game(gameId, msg.sender, GameState.free, tictac, true, SquareState.free, address(0), (_days * 1 days) + (_hours * 1 hours) + (_minutes * 1 minutes), block.timestamp);
-        emit GameCreated(gameId, msg.sender, games[gameId].waitingTime, block.timestamp);
-        gameId++;
+    ) external payable {
+        require(_days + _hours + _minutes > 0, "Time not set");
+        require(msg.value >= 0.001 ether, "Not enaught ETH");
+        (bool success, ) = address(wallet).call{value: (msg.value * commission) / 100}("");
+        require(success, "Failed to send Ether");
+        _createGame(_days, _hours, _minutes, msg.value);
     }
 
-    /// @notice Join free play
-    function joinGame(uint256 _gameId) external GameIsFree(_gameId) {
-        require(_gameId < gameId, "That game not exist");
-        require(msg.sender != games[_gameId].owner, "Can't play with yourself");
-        games[_gameId].rival = msg.sender;
+    function createGamefromERC20(
+        address _token,
+        uint64 _days,
+        uint64 _hours,
+        uint64 _minutes,
+        uint256 _betAmount
+    ) external {
+        require(_days + _hours + _minutes > 0, "Time not set");
+        ERC20(_token).transferFrom(msg.sender, address(this), _betAmount);
+        ERC20(_token).transfer(address(wallet), (_betAmount * commission) / 100);
+        MultisigWallet(wallet).receiveERC20(_token, _betAmount);
+        isERC20Game[gameId] = true;
+        _createGame(_days, _hours, _minutes, _betAmount);
+    }
 
-        /// @dev Randomly determined sign for players
-        if (rand(block.timestamp, blockhash(block.number))) {
-            sign[msg.sender][_gameId] = SquareState.cross;
-            sign[games[_gameId].owner][_gameId] = SquareState.zero;
-        } else {
-            sign[msg.sender][_gameId] = SquareState.zero;
-            sign[games[_gameId].owner][_gameId] = SquareState.cross;
-        }
-        games[_gameId].state = GameState.playing;
-        games[_gameId].lastActiveTime = block.timestamp;
-        emit JoinedToGame(_gameId, msg.sender, sign[msg.sender][_gameId], block.timestamp);
+    /// @notice Join free game
+    function joinGameFromEth(uint256 _gameId) external payable GameIsFree(_gameId) GameExist(_gameId) {
+        require(msg.sender != games[_gameId].owner, "Can't play with yourself");
+        require(msg.value == games[_gameId].betSize, "Not correct bet size");
+
+        (bool success, ) = address(wallet).call{value: (msg.value * commission) / 100}("");
+        require(success, "Failed to send Ether");
+        _joinGame(_gameId);
+    }
+
+    function joinGameFromERC20(uint256 _gameId, address _token) external GameIsFree(_gameId) GameExist(_gameId) {
+        require(msg.sender != games[_gameId].owner, "Can't play with yourself");
+        require(isERC20Game[_gameId], "Bet by ether");
+
+        ERC20(_token).transferFrom(msg.sender, address(this), games[_gameId].betSize);
+        ERC20(_token).transfer(address(wallet), (games[_gameId].betSize * commission) / 100);
+        MultisigWallet(wallet).receiveERC20(_token, games[_gameId].betSize);
+        _joinGame(_gameId);
     }
 
     /// @notice Make a move
@@ -96,8 +143,7 @@ contract TicTacToe {
         uint256 _gameId,
         uint256 _x,
         uint256 _y
-    ) external GameIsStarted(_gameId) {
-        require(msg.sender == games[_gameId].owner || msg.sender == games[_gameId].rival, "Not your game");
+    ) external GameIsStarted(_gameId) onlyPlayer(_gameId) {
         require(block.timestamp <= games[_gameId].waitingTime + games[_gameId].lastActiveTime, "Move time over");
         require(games[_gameId].cell[_x][_y] == SquareState.free, "Square not free");
         require(_x < 3 && _y < 3, "Not correct position");
@@ -110,9 +156,7 @@ contract TicTacToe {
         SquareState gameWinner = checkEndGame(games[_gameId], sign[msg.sender][_gameId], _x, _y);
         /// @dev If game is over
         if (gameWinner != SquareState.free) {
-            games[_gameId].state = GameState.finished;
-            games[_gameId].winner = gameWinner;
-            emit GameResult(_gameId, gameWinner, gameWinner == SquareState.draw ? address(0) : msg.sender, block.timestamp);
+            _finishGame(_gameId, gameWinner);
         }
     }
 
@@ -123,15 +167,44 @@ contract TicTacToe {
             games[_gameId].state = GameState.finished;
             if (games[_gameId].isCrossMove) {
                 /// @dev Zero won
-                games[_gameId].winner = SquareState.zero;
-                if (sign[games[_gameId].owner][_gameId] == SquareState.cross) emit GameResult(_gameId, SquareState.zero, games[_gameId].rival, block.timestamp);
-                else emit GameResult(_gameId, SquareState.zero, games[_gameId].owner, block.timestamp);
+                _finishGame(_gameId, SquareState.zero);
             } else {
                 /// @dev Cross won
-                games[_gameId].winner = SquareState.cross;
-                if (sign[games[_gameId].owner][_gameId] == SquareState.cross) emit GameResult(_gameId, SquareState.cross, games[_gameId].owner, block.timestamp);
-                else emit GameResult(_gameId, SquareState.cross, games[_gameId].rival, block.timestamp);
+                _finishGame(_gameId, SquareState.cross);
             }
+        }
+    }
+
+    function withdrawETH(uint256 _gameId) external GameIsFinished(_gameId) onlyPlayer(_gameId) {
+        require(canWithdraw[_gameId][msg.sender], "Can't withdraw");
+        require(!isERC20Game[_gameId], "Bet by tokens");
+        uint256 withdrawCount;
+        delete canWithdraw[_gameId][msg.sender];
+        if (games[_gameId].winner == SquareState.draw) {
+            withdrawCount = (games[_gameId].betSize * (100 - commission)) / 100;
+            payable(msg.sender).transfer(withdrawCount);
+            emit Withdraw(_gameId, msg.sender, withdrawCount);
+        }
+        if (games[_gameId].winner == sign[msg.sender][_gameId]) {
+            withdrawCount = (2 * games[_gameId].betSize * (100 - commission)) / 100;
+            payable(msg.sender).transfer(withdrawCount);
+            emit Withdraw(_gameId, msg.sender, withdrawCount * 2);
+        }
+    }
+
+    function withdrawERC20(uint256 _gameId, address token) external GameIsFinished(_gameId) onlyPlayer(_gameId) {
+        require(isERC20Game[_gameId], "Bet by ether");
+        require(canWithdraw[_gameId][msg.sender], "Can't withdraw");
+        uint256 withdrawCount;
+        withdrawCount = (games[_gameId].betSize * (100 - commission)) / 100;
+        delete canWithdraw[_gameId][msg.sender];
+        if (games[_gameId].winner == SquareState.draw) {
+            ERC20(token).transfer(msg.sender, withdrawCount);
+            emit Withdraw(_gameId, msg.sender, withdrawCount);
+        }
+        if (games[_gameId].winner == sign[msg.sender][_gameId]) {
+            ERC20(token).transfer(msg.sender, withdrawCount * 2);
+            emit Withdraw(_gameId, msg.sender, withdrawCount * 2);
         }
     }
 
@@ -185,6 +258,45 @@ contract TicTacToe {
                 if (games[_gameId].cell[i][j] == SquareState.free) cell[i][j] = 0;
                 if (games[_gameId].cell[i][j] == SquareState.cross) cell[i][j] = 1;
                 if (games[_gameId].cell[i][j] == SquareState.zero) cell[i][j] = 2;
+            }
+        }
+    }
+
+    function _createGame(
+        uint64 _days,
+        uint64 _hours,
+        uint64 _minutes,
+        uint256 betAmount
+    ) internal {
+        SquareState[3][3] memory tictac;
+        games[gameId] = Game(gameId, msg.sender, GameState.free, tictac, true, SquareState.free, address(0), (_days * 1 days) + (_hours * 1 hours) + (_minutes * 1 minutes), block.timestamp, betAmount);
+        sign[msg.sender][gameId] = SquareState.cross;
+        emit GameCreated(gameId, msg.sender, games[gameId].waitingTime, block.timestamp, betAmount);
+        gameId++;
+    }
+
+    function _joinGame(uint256 _gameId) internal {
+        games[_gameId].rival = msg.sender;
+        sign[msg.sender][_gameId] = SquareState.zero;
+        games[_gameId].state = GameState.playing;
+        games[_gameId].lastActiveTime = block.timestamp;
+        emit JoinedToGame(_gameId, msg.sender, block.timestamp, games[_gameId].betSize);
+    }
+
+    function _finishGame(uint256 _gameId, SquareState winner) internal {
+        games[_gameId].state = GameState.finished;
+        games[_gameId].winner = winner;
+        if (winner == SquareState.draw) {
+            canWithdraw[_gameId][games[_gameId].owner] = true;
+            canWithdraw[_gameId][games[_gameId].rival] = true;
+            emit GameResult(_gameId, winner, address(0), block.timestamp);
+        } else {
+            if (winner == SquareState.cross) {
+                canWithdraw[_gameId][games[_gameId].owner] = true;
+                emit GameResult(_gameId, winner, games[_gameId].owner, block.timestamp);
+            } else {
+                canWithdraw[_gameId][games[_gameId].rival] = true;
+                emit GameResult(_gameId, winner, games[_gameId].rival, block.timestamp);
             }
         }
     }
@@ -252,13 +364,5 @@ contract TicTacToe {
         if (line[0] || line[1] || line[2] || line[3]) return _sign;
         if (line[4]) return SquareState.draw;
         return SquareState.free;
-    }
-
-    /// @param factor1 - block.timestamp
-    /// @param factor2 - block hash
-    /// @return Bool which determines which sign the players will get
-    function rand(uint256 factor1, bytes32 factor2) internal pure returns (bool) {
-        uint256 random = uint256(keccak256(abi.encodePacked(factor1, factor2)));
-        return random % 2 == 0 ? true : false;
     }
 }

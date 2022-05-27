@@ -13,14 +13,24 @@ export async function prepareSigners(thisObject: Mocha.Context) {
 }
 
 export async function prepareTicTacToeTokens(thisObject: Mocha.Context, signer: SignerWithAddress) {
-    const tokenFactory = await ethers.getContractFactory("TicTacToe")
+    const TicTacToeFactory = await ethers.getContractFactory("TicTacToe")
+    const ERC20Factory = await ethers.getContractFactory("ERC20Mock")
+    const WalletFactory = await ethers.getContractFactory("Wallet")
 
-    const TicTacToe = await tokenFactory.connect(signer).deploy()
+    const ERC20Mock = await ERC20Factory.connect(signer).deploy(ERC20Args.name, ERC20Args.symbol, ERC20Args.totalSupply)
+    await ERC20Mock.deployed()
+    thisObject.token2 = ERC20Mock
+
+    const Wallet = await WalletFactory.connect(signer).deploy([thisObject.owner.address, thisObject.alice.address, thisObject.bob.address], 2)
+    await ERC20Mock.deployed()
+    thisObject.token3 = Wallet
+
+    const TicTacToe = await TicTacToeFactory.connect(signer).deploy(Wallet.address)
     await TicTacToe.deployed()
     thisObject.token1 = TicTacToe
 }
 
-export const args = {
+export const gameArgs = {
     gameID: 0,
     days: 0,
     hours: 1,
@@ -28,6 +38,19 @@ export const args = {
     x: [0, 1, 2],
     y: [0, 1, 2],
     percent: [0, 100],
+    ether: "1",
+    tokens: 100,
+    comission: 5,
+}
+
+export const wallet = {
+    tokens: [0],
+}
+
+export const ERC20Args = {
+    name: "DogyCoin",
+    symbol: "DGC",
+    totalSupply: 200,
 }
 
 export const game = {
