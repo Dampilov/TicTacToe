@@ -1,10 +1,10 @@
 import { task } from "hardhat/config"
-import "./getContract"
+import "./getTicTacToe"
 
 task("addressStatistic", "Get statistic by address")
     .addParam("account", "Number of account")
     .setAction(async ({ account }, hre) => {
-        const TicTacToe = await hre.run("getTicTacToe", { name: "TicTacToe" })
+        const TicTacToe = await hre.run("getTicTacToe")
 
         try {
             const accounts = await hre.ethers.getSigners()

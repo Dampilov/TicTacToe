@@ -57,7 +57,7 @@ const config: HardhatUserConfig = {
         },
         ropsten: {
             url: `https://ropsten.infura.io/v3/${process.env.INFURA_API_KEY}`,
-            blockGasLimit: 5000000000,
+
             accounts: {
                 mnemonic: process.env.MNEMONIC,
             },

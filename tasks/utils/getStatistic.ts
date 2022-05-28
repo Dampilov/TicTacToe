@@ -1,5 +1,5 @@
 import { task } from "hardhat/config"
-import "./getContract"
+import "./getTicTacToe"
 
 task("getStatistic", "Get statistic of one of variant")
     .addParam("id", "ID of the variant. 0 - zero win percentage. 1 - cross win percentage. 2 - game end in draw percentage")

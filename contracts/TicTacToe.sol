@@ -112,6 +112,7 @@ contract TicTacToe {
         uint256 _betAmount
     ) external {
         require(_days + _hours + _minutes > 0, "Time not set");
+        require(_betAmount >= 5, "Not enaught tokens");
         ERC20(_token).transferFrom(msg.sender, address(this), _betAmount);
         ERC20(_token).transfer(address(wallet), (_betAmount * commission) / 100);
         MultisigWallet(wallet).receiveERC20(_token, _betAmount);

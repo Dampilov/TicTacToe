@@ -1,5 +1,5 @@
 import { task } from "hardhat/config"
-import "./getContract"
+import "./getTicTacToe"
 
 task("makeMove", "Make move by the ID of game")
     .addOptionalParam("account", "ID of the account")
