@@ -4,8 +4,11 @@ TicTacToe - игра крестики-нолики.<br>
 Wallet - Multisig Wallet<br>
 ERC20Mock - ERC20 токен<br>
 
-Также в корне проекта должен быть файл .env содержащий
-<br/>
+# Адреса контрактов в Rinkeby
+
+TicTacToe - 0x889cBcBbEFa0FEc058C70fDD38e7c8Cf1500aB19<br>
+Wallet - 0x386D6fDB4785B709f6122BD69965560a148eAc83<br>
+ERC20Mock - 0xce9Ce076CdBA678E36A1b650f3e691f12b137F9A<br>
 
 ## Hardhat tasks:
 
