@@ -77,7 +77,7 @@ contract Wallet is MultisigWallet {
 
     constructor(address[] memory _owners, uint256 _required) {
         require(_owners.length > 0, "Owners required");
-        require(_required > 0 && _required < _owners.length, "Invalid require number");
+        require(_required > 0 && _required <= _owners.length, "Invalid require number");
 
         required = _required;
         for (uint256 i; i < _owners.length; i++) {

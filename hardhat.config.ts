@@ -16,7 +16,7 @@ const config: HardhatUserConfig = {
     solidity: {
         compilers: [
             {
-                version: "0.8.9",
+                version: "0.8.12",
                 settings: {
                     optimizer: {
                         enabled: true,
@@ -79,7 +79,7 @@ const config: HardhatUserConfig = {
         },
         rinkeby: {
             url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY_RINKEBY}`,
-            accounts: [`0x${process.env.PRIVATE_KEY}`],
+            accounts: [`0x${process.env.PRIVATE_KEY_1}`, `0x${process.env.PRIVATE_KEY_2}`],
         },
     },
     namedAccounts: {

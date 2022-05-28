@@ -22,7 +22,7 @@ export async function prepareTicTacToeTokens(thisObject: Mocha.Context, signer: 
     thisObject.token2 = ERC20Mock
 
     const Wallet = await WalletFactory.connect(signer).deploy([thisObject.owner.address, thisObject.alice.address, thisObject.bob.address], 2)
-    await ERC20Mock.deployed()
+    await Wallet.deployed()
     thisObject.token3 = Wallet
 
     const TicTacToe = await TicTacToeFactory.connect(signer).deploy(Wallet.address)

@@ -1,9 +1,10 @@
+import { Wallet } from "ethers"
 import { HardhatRuntimeEnvironment } from "hardhat/types"
 
 module.exports = async function (hre: HardhatRuntimeEnvironment) {
     console.log(`ChainId: ${await hre.getChainId()}`)
 
-    const { deployments, getNamedAccounts, ethers } = hre
+    const { deployments, getNamedAccounts, getUnnamedAccounts, ethers } = hre
     const { deploy } = deployments
 
     const { deployer } = await getNamedAccounts()
@@ -11,21 +12,14 @@ module.exports = async function (hre: HardhatRuntimeEnvironment) {
 
     console.log(`Deployer: ${deployer} , balance: ${ethers.utils.formatEther(balance)} `)
 
-    const accounts = await ethers.getSigners()
-    const owners = [deployer, accounts[1].address, accounts[2].address]
-    const requiredOwners = 2
-
-    const wallet = await deploy("Wallet", {
-        args: [owners, requiredOwners],
-        from: deployer,
-        log: true,
-    })
+    const Wallet = await deployments.get("Wallet")
 
     await deploy("TicTacToe", {
-        args: [wallet.address],
+        args: [Wallet.address],
         from: deployer,
         log: true,
     })
 }
 
-module.exports.tags = ["TicTacToe", "Wallet"]
+module.exports.tags = ["TicTacToe"]
+module.exports.dependencies = ["Wallet"]
