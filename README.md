@@ -13,43 +13,12 @@ An unexpected error occurred:
 
 Error: ERROR processing C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\deploy\ERC20Mock.ts:
 ProviderError: contract creation code storage out of gas
-at HttpProvider.request (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat\src\internal\core\providers\http.ts:74:19)
-at HDWalletProvider.request (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat\src\internal\core\providers\accounts.ts:188:34)
-at processTicksAndRejections (node:internal/process/task_queues:96:5)
-at DeploymentsManager.executeDeployScripts (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat-deploy\src\DeploymentsManager.ts:1222:19)
-at processTicksAndRejections (node:internal/process/task_queues:96:5)
-at async DeploymentsManager.runDeploy (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat-deploy\src\DeploymentsManager.ts:1052:5)
-at async SimpleTaskDefinition.action (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat-deploy\src\index.ts:422:5)
-at async Environment.\_runTaskDefinition (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat\src\internal\core\runtime-environment.ts:217:14)
-at async Environment.run (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat\src\internal\core\runtime-environment.ts:129:14)
-at async SimpleTaskDefinition.action (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat-deploy\src\index.ts:568:32)
-at async Environment.\_runTaskDefinition (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat\src\internal\core\runtime-environment.ts:217:14)
-at async Environment.run (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat\src\internal\core\runtime-environment.ts:129:14)
-at async SimpleTaskDefinition.action (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat-deploy\src\index.ts:653:5)
+at HttpProvider.request
 
-С указанным лимитом газа: 3 000 000
+С указанным лимитом газа: 3 000 000<br>
 deploying "ERC20Mock"exceeds block gas limit {"name":"ProviderError","code":-32000,"\_isProviderError":true} ProviderError:
 exceeds block gas limit
-at HttpProvider.request (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat\src\internal\core\providers\http.ts:74:19)
-at HDWalletProvider.request (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat\src\internal\core\providers\accounts.ts:182:36)
-at processTicksAndRejections (node:internal/process/task_queues:96:5)
-An unexpected error occurred:
-
-Error: ERROR processing C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\deploy\ERC20Mock.ts:
-ProviderError: exceeds block gas limit
-at HttpProvider.request (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat\src\internal\core\providers\http.ts:74:19)
-at HDWalletProvider.request (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat\src\internal\core\providers\accounts.ts:182:36)
-at processTicksAndRejections (node:internal/process/task_queues:96:5)
-at DeploymentsManager.executeDeployScripts (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat-deploy\src\DeploymentsManager.ts:1222:19)
-at processTicksAndRejections (node:internal/process/task_queues:96:5)
-at async DeploymentsManager.runDeploy (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat-deploy\src\DeploymentsManager.ts:1052:5)
-at async SimpleTaskDefinition.action (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat-deploy\src\index.ts:422:5)
-at async Environment.\_runTaskDefinition (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat\src\internal\core\runtime-environment.ts:217:14)
-at async Environment.run (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat\src\internal\core\runtime-environment.ts:129:14)
-at async SimpleTaskDefinition.action (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat-deploy\src\index.ts:568:32)
-at async Environment.\_runTaskDefinition (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat\src\internal\core\runtime-environment.ts:217:14)
-at async Environment.run (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat\src\internal\core\runtime-environment.ts:129:14)
-at async SimpleTaskDefinition.action (C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\node_modules\hardhat-deploy\src\index.ts:653:5)
+at HttpProvider.request
 
 ## Hardhat tasks:
 
