@@ -77,6 +77,10 @@ const config: HardhatUserConfig = {
                 mnemonic: process.env.MNEMONIC,
             },
         },
+        rinkeby: {
+            url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY_RINKEBY}`,
+            accounts: [`0x${process.env.PRIVATE_KEY}`],
+        },
     },
     namedAccounts: {
         deployer: 0,

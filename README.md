@@ -1,24 +1,11 @@
-# TodoList
+# Контракты
 
-Контракт крестики-нолики.
-Также в корне проекта должен быть файл .env содержащий PRIVATE_KEY - приватный ключ проекта Infura, и MNEMONIC - секретные слова от кошелька(те которые никто не должен узнать).<br/>
-Эти два параметра нужны при деплое контракта в тестовую сеть Ropsten.<br/>
+TicTacToe - игра крестики-нолики.
+Wallet - Multisig Wallet
+ERC20Mock - ERC20 токен
+
+Также в корне проекта должен быть файл .env содержащий
 <br/>
-
-## Развернутый контракт в Ropsten:<br/>
-
-## Ошибки
-
-An unexpected error occurred:
-
-Error: ERROR processing C:\Users\danil\Desktop\projects\ilink\Solidity\TicTacToe\deploy\ERC20Mock.ts:
-ProviderError: contract creation code storage out of gas
-at HttpProvider.request
-
-С указанным лимитом газа: 3 000 000<br>
-deploying "ERC20Mock"exceeds block gas limit {"name":"ProviderError","code":-32000,"\_isProviderError":true} ProviderError:
-exceeds block gas limit
-at HttpProvider.request
 
 ## Hardhat tasks:
 
