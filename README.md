@@ -1,8 +1,8 @@
 # Контракты
 
-TicTacToe - игра крестики-нолики.
-Wallet - Multisig Wallet
-ERC20Mock - ERC20 токен
+TicTacToe - игра крестики-нолики.<br>
+Wallet - Multisig Wallet<br>
+ERC20Mock - ERC20 токен<br>
 
 Также в корне проекта должен быть файл .env содержащий
 <br/>
