@@ -3,22 +3,23 @@
 pragma solidity >=0.7.0 <0.9.0;
 import "./Wallet.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 /// @title TicTacToe contract
 /// @author Dampilov D.
 
-contract TicTacToe {
+contract TicTacToe is Initializable {
     uint256 gameId;
-    uint256 immutable commission;
-    address public owner;
-    address public wallet;
+    uint256 commission;
+    address wallet;
 
-    mapping(uint256 => Game) public games;
-    mapping(uint256 => bool) public isERC20Game;
+    mapping(uint256 => Game) games;
+    mapping(uint256 => bool) isERC20Game;
     mapping(uint256 => mapping(address => bool)) canWithdraw;
+    mapping(uint256 => SquareState[3][3]) cells;
 
     /// @notice Sign for gamer, cross or zero
-    mapping(address => mapping(uint256 => SquareState)) public sign;
+    mapping(address => mapping(uint256 => SquareState)) sign;
 
     enum GameState {
         free,
@@ -38,15 +39,14 @@ contract TicTacToe {
     /// @dev winner - sign of the winner, or draw if ended in a draw
     struct Game {
         uint256 id;
-        address owner;
-        GameState state;
-        SquareState[3][3] cell;
-        bool isCrossMove;
-        SquareState winner;
-        address rival;
         uint256 waitingTime;
         uint256 lastActiveTime;
         uint256 betSize;
+        address owner;
+        address rival;
+        bool isCrossMove;
+        SquareState winner;
+        GameState state;
     }
 
     event GameCreated(uint256 indexed _gameId, address indexed owner, uint256 indexed waitingTime, uint256 createdTime, uint256 betSize);
@@ -82,18 +82,18 @@ contract TicTacToe {
         _;
     }
 
-    constructor(address _walletAddress) {
+    function initialize(address _walletAddress) external initializer {
+        gameId = 0;
         commission = 5;
-        owner = msg.sender;
         wallet = _walletAddress;
     }
 
     /// @notice Create new game from ether
     /// @param _days, _hours, _minutes - move waiting time
     function createGameFromEth(
-        uint64 _days,
-        uint64 _hours,
-        uint64 _minutes
+        uint8 _days,
+        uint8 _hours,
+        uint8 _minutes
     ) external payable {
         require(_days + _hours + _minutes > 0, "Time not set");
         require(msg.value >= 0.001 ether, "Not enaught ETH");
@@ -145,19 +145,18 @@ contract TicTacToe {
     /// @param _x, _y - coordinates where you want to put your sign
     function step(
         uint256 _gameId,
-        uint256 _x,
-        uint256 _y
+        uint8 _x,
+        uint8 _y
     ) external GameIsStarted(_gameId) onlyPlayer(_gameId) {
         require(block.timestamp <= games[_gameId].waitingTime + games[_gameId].lastActiveTime, "Move time over");
-        require(games[_gameId].cell[_x][_y] == SquareState.free, "Square not free");
+        require(cells[_gameId][_x][_y] == SquareState.free, "Square not free");
         require(_x < 3 && _y < 3, "Not correct position");
-        require((games[_gameId].isCrossMove && sign[msg.sender][_gameId] == SquareState.cross) || (!games[_gameId].isCrossMove && sign[msg.sender][_gameId] == SquareState.zero), "Not your move");
 
-        games[_gameId].cell[_x][_y] = sign[msg.sender][_gameId];
+        cells[_gameId][_x][_y] = sign[msg.sender][_gameId];
         games[_gameId].isCrossMove = !games[_gameId].isCrossMove;
         games[_gameId].lastActiveTime = block.timestamp;
         emit MoveMade(_gameId, msg.sender, _x, _y, block.timestamp);
-        SquareState gameWinner = _checkEndGame(games[_gameId], sign[msg.sender][_gameId], _x, _y);
+        SquareState gameWinner = _checkEndGame(cells[_gameId], sign[msg.sender][_gameId], _x, _y);
         /// @dev If game is over
         if (gameWinner != SquareState.free) {
             _finishGame(_gameId, gameWinner);
@@ -168,7 +167,6 @@ contract TicTacToe {
     /// @dev If the time is up then the game is over
     function checkGameTime(uint256 _gameId) external {
         if (block.timestamp > games[_gameId].waitingTime + games[_gameId].lastActiveTime) {
-            games[_gameId].state = GameState.finished;
             if (games[_gameId].isCrossMove) {
                 /// @dev Zero won
                 _finishGame(_gameId, SquareState.zero);
@@ -261,25 +259,11 @@ contract TicTacToe {
     function getCell(uint256 _gameId) external view returns (uint8[3][3] memory cell) {
         for (uint256 i; i < 3; i++) {
             for (uint256 j; j < 3; j++) {
-                if (games[_gameId].cell[i][j] == SquareState.free) cell[i][j] = 0;
-                if (games[_gameId].cell[i][j] == SquareState.cross) cell[i][j] = 1;
-                if (games[_gameId].cell[i][j] == SquareState.zero) cell[i][j] = 2;
+                if (cells[_gameId][i][j] == SquareState.free) cell[i][j] = 0;
+                if (cells[_gameId][i][j] == SquareState.cross) cell[i][j] = 1;
+                if (cells[_gameId][i][j] == SquareState.zero) cell[i][j] = 2;
             }
         }
-    }
-
-    /// @dev Create new game
-    function _createGame(
-        uint64 _days,
-        uint64 _hours,
-        uint64 _minutes,
-        uint256 betAmount
-    ) internal {
-        SquareState[3][3] memory tictac;
-        games[gameId] = Game(gameId, msg.sender, GameState.free, tictac, true, SquareState.free, address(0), (_days * 1 days) + (_hours * 1 hours) + (_minutes * 1 minutes), block.timestamp, betAmount);
-        sign[msg.sender][gameId] = SquareState.cross;
-        emit GameCreated(gameId, msg.sender, games[gameId].waitingTime, block.timestamp, betAmount);
-        gameId++;
     }
 
     /// @dev Join player to some free game
@@ -324,6 +308,19 @@ contract TicTacToe {
         }
     }
 
+    /// @dev Create new game
+    function _createGame(
+        uint64 _days,
+        uint64 _hours,
+        uint64 _minutes,
+        uint256 betAmount
+    ) internal {
+        games[gameId] = Game(gameId, (_days * 1 days) + (_hours * 1 hours) + (_minutes * 1 minutes), block.timestamp, betAmount, msg.sender, address(0), true, SquareState.free, GameState.free);
+        sign[msg.sender][gameId] = SquareState.cross;
+        emit GameCreated(gameId, msg.sender, games[gameId].waitingTime, block.timestamp, betAmount);
+        gameId++;
+    }
+
     /// @dev Checking if the game is over
     /// @param _x, _y - coordinates where you want to put your sign
     /**
@@ -332,46 +329,36 @@ contract TicTacToe {
      If game over in draw, return SquareState.draw
      */
     function _checkEndGame(
-        Game memory game,
+        SquareState[3][3] memory _cells,
         SquareState _sign,
-        uint256 _x,
-        uint256 _y
+        uint8 _x,
+        uint8 _y
     ) internal pure returns (SquareState) {
-        bool[5] memory line;
-        line[0] = true;
-        line[1] = true;
-        line[4] = true;
-        /// @dev If lies on one of the diagonals, then you can check
-        if ((_x + _y) % 2 == 0) {
-            line[2] = true;
-            line[3] = true;
-        }
+        bool[5] memory isNotLine;
 
-        for (uint256 i; i < 3 && (line[0] || line[1] || line[2] || line[3] || line[4]); i++) {
-            /// @dev Vertical and horizontal check
-            if (game.cell[_x][i] != _sign) {
-                line[0] = false;
+        for (uint8 i; i < 3; i++) {
+            /// @dev Horizontal check
+            if (_cells[_x][i] != _sign) {
+                isNotLine[0] = true;
             }
-            if (game.cell[i][_y] != _sign) {
-                line[1] = false;
+            /// @dev Vertical check
+            if (_cells[i][_y] != _sign) {
+                isNotLine[1] = true;
             }
             /// @dev Diagonals check
-            if ((_x + _y) % 2 == 0) {
-                if (game.cell[i][i] != _sign) {
-                    line[2] = false;
-                }
-
-                if (game.cell[i][2 - i] != _sign) {
-                    line[3] = false;
-                }
+            if (_cells[i][i] != _sign) {
+                isNotLine[2] = true;
+            }
+            if (_cells[i][2 - i] != _sign) {
+                isNotLine[3] = true;
             }
             /// @dev Checking for a draw
-            for (uint256 j; j < 3 && line[4]; j++) {
-                if (game.cell[i][j] == SquareState.free) line[4] = false;
+            for (uint8 j; j < 3; j++) {
+                if (_cells[i][j] != SquareState.free) isNotLine[4] = true;
             }
         }
-        if (line[0] || line[1] || line[2] || line[3]) return _sign;
-        if (line[4]) return SquareState.draw;
+        if (!isNotLine[0] || !isNotLine[1] || !isNotLine[2] || !isNotLine[3]) return _sign;
+        if (!isNotLine[4]) return SquareState.draw;
         return SquareState.free;
     }
 }
