@@ -9,15 +9,15 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 contract TicTacProxy is ERC1967Proxy {
     uint256 gameId;
     uint256 commission;
-    address public wallet;
+    address wallet;
 
-    mapping(uint256 => Game) public games;
-    mapping(uint256 => bool) public isERC20Game;
+    mapping(uint256 => Game) games;
+    mapping(uint256 => bool) isERC20Game;
     mapping(uint256 => mapping(address => bool)) canWithdraw;
-    mapping(uint256 => SquareState[3][3]) public cells;
+    mapping(uint256 => SquareState[3][3]) cells;
 
     /// @notice Sign for gamer, cross or zero
-    mapping(address => mapping(uint256 => SquareState)) public sign;
+    mapping(address => mapping(uint256 => SquareState)) sign;
 
     enum GameState {
         free,

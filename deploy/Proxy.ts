@@ -12,7 +12,6 @@ module.exports = async function (hre: HardhatRuntimeEnvironment) {
     console.log(`Deployer: ${deployer} , balance: ${ethers.utils.formatEther(balance)} `)
 
     const TicTacToe = await deployments.get("TicTacToe")
-    const Wallet = await deployments.get("Wallet")
 
     await deploy("TicTacProxy", {
         args: [TicTacToe.address],
@@ -22,4 +21,4 @@ module.exports = async function (hre: HardhatRuntimeEnvironment) {
 }
 
 module.exports.tags = ["TicTacProxy"]
-module.exports.dependencies = ["TicTacToe", "Wallet"]
+module.exports.dependencies = ["TicTacToe"]

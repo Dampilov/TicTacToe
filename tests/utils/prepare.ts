@@ -1,6 +1,6 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers"
-import { ethers } from "hardhat"
-import { Address } from "hardhat-deploy/dist/types"
+import { ContractFactory } from "ethers"
+import { ethers, upgrades } from "hardhat"
 
 export async function prepareSigners(thisObject: Mocha.Context) {
     thisObject.signers = await ethers.getSigners()
@@ -16,18 +16,30 @@ export async function prepareTicTacToeTokens(thisObject: Mocha.Context, signer: 
     const TicTacToeFactory = await ethers.getContractFactory("TicTacToe")
     const ERC20Factory = await ethers.getContractFactory("ERC20Mock")
     const WalletFactory = await ethers.getContractFactory("Wallet")
+    const TicTacProxyFactory = await ethers.getContractFactory("TicTacProxy")
+
+    const Wallet = await WalletFactory.connect(signer).deploy([thisObject.owner.address, thisObject.alice.address], 2)
+    await Wallet.deployed()
+    thisObject.Wallet = Wallet
 
     const ERC20Mock = await ERC20Factory.connect(signer).deploy(ERC20Args.totalSupply)
     await ERC20Mock.deployed()
-    thisObject.token2 = ERC20Mock
+    thisObject.ERC20 = ERC20Mock
 
-    const Wallet = await WalletFactory.connect(signer).deploy([thisObject.owner.address, thisObject.alice.address, thisObject.bob.address], 2)
-    await Wallet.deployed()
-    thisObject.token3 = Wallet
-
-    const TicTacToe = await TicTacToeFactory.connect(signer).deploy(Wallet.address)
+    const TicTacToe = await TicTacToeFactory.connect(signer).deploy()
     await TicTacToe.deployed()
-    thisObject.token1 = TicTacToe
+    thisObject.Implementation = TicTacToe
+
+    const TicTacProxy = await TicTacProxyFactory.connect(signer).deploy(TicTacToe.address)
+    await ERC20Mock.deployed()
+    thisObject.Proxy = TicTacProxy
+
+    const Implement = await upgrades.deployProxy(TicTacToeFactory.connect(signer) as ContractFactory, [Wallet.address], {
+        initializer: "initialize",
+        kind: "uups",
+    })
+    await Implement.deployed()
+    thisObject.Implement = Implement
 }
 
 export const gameArgs = {

@@ -4,22 +4,24 @@ pragma solidity >=0.7.0 <0.9.0;
 import "./Wallet.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /// @title TicTacToe contract
 /// @author Dampilov D.
 
-contract TicTacToe is Initializable {
+contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     uint256 gameId;
     uint256 commission;
-    address wallet;
+    address public wallet;
 
-    mapping(uint256 => Game) games;
-    mapping(uint256 => bool) isERC20Game;
+    mapping(uint256 => Game) public games;
+    mapping(uint256 => bool) public isERC20Game;
     mapping(uint256 => mapping(address => bool)) canWithdraw;
-    mapping(uint256 => SquareState[3][3]) cells;
+    mapping(uint256 => SquareState[3][3]) public cells;
 
     /// @notice Sign for gamer, cross or zero
-    mapping(address => mapping(uint256 => SquareState)) sign;
+    mapping(address => mapping(uint256 => SquareState)) public sign;
 
     enum GameState {
         free,
@@ -151,6 +153,7 @@ contract TicTacToe is Initializable {
         require(block.timestamp <= games[_gameId].waitingTime + games[_gameId].lastActiveTime, "Move time over");
         require(cells[_gameId][_x][_y] == SquareState.free, "Square not free");
         require(_x < 3 && _y < 3, "Not correct position");
+        require((games[_gameId].isCrossMove && sign[msg.sender][_gameId] == SquareState.cross) || (!games[_gameId].isCrossMove && sign[msg.sender][_gameId] == SquareState.zero), "Not your move");
 
         cells[_gameId][_x][_y] = sign[msg.sender][_gameId];
         games[_gameId].isCrossMove = !games[_gameId].isCrossMove;
@@ -354,11 +357,13 @@ contract TicTacToe is Initializable {
             }
             /// @dev Checking for a draw
             for (uint8 j; j < 3; j++) {
-                if (_cells[i][j] != SquareState.free) isNotLine[4] = true;
+                if (_cells[i][j] == SquareState.free) isNotLine[4] = true;
             }
         }
         if (!isNotLine[0] || !isNotLine[1] || !isNotLine[2] || !isNotLine[3]) return _sign;
         if (!isNotLine[4]) return SquareState.draw;
         return SquareState.free;
     }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

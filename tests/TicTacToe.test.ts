@@ -1,6 +1,6 @@
 import { BigNumber } from "ethers"
 import { expect, use } from "chai"
-import { ethers, waffle } from "hardhat"
+import { ethers, waffle, upgrades } from "hardhat"
 import { prepareTicTacToeTokens, prepareSigners, gameArgs, game, ERC20Args, wallet } from "./utils/prepare"
 import { duration, increase } from "./utils/time"
 import { Web3Provider } from "ethers/node_modules/@ethersproject/providers"
@@ -15,16 +15,15 @@ describe("TicTacToe game contract", function () {
 
     describe("Deployment", function () {
         it("Should TicTacToe be deployed", async function () {
-            expect(await this.token1.owner()).to.eq(this.owner.address)
-            expect(await this.token1.wallet()).to.be.properAddress
+            expect(await this.Implement.address).to.be.properAddress
         })
 
         it("Should ERC20 be deployed", async function () {
-            expect(await this.token2.balanceOf(this.owner.address)).to.eq(ERC20Args.totalSupply)
+            expect(await this.ERC20.balanceOf(this.owner.address)).to.eq(ERC20Args.totalSupply)
         })
 
         it("Should Wallet be deployed", async function () {
-            expect(await this.token1.wallet()).to.eq(this.token3.address)
+            expect(await this.Implement.wallet()).to.eq(this.Wallet.address)
         })
     })
 
@@ -36,16 +35,16 @@ describe("TicTacToe game contract", function () {
                 value: ethers.utils.parseEther(gameArgs.ether),
             }
             const comission = BigNumber.from(eth.value.toString()).mul(gameArgs.comission).div(100)
-            await this.token1.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
+            await this.Implement.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
 
             // Should exist game
-            const ownerGame = await this.token1.games(gameID)
+            const ownerGame = await this.Implement.games(gameID)
 
             expect(ownerGame.betSize).to.equal(eth.value)
             expect(ownerGame.owner).to.equal(this.owner.address)
             expect(ownerGame.state).to.equal(game.state.free)
             expect(ownerGame.winner).to.equal(game.sign.free)
-            expect(await this.token1.isERC20Game(gameID)).to.equal(isTokenGame)
+            expect(await this.Implement.isERC20Game(gameID)).to.equal(isTokenGame)
             const waitTime = BigNumber.from(duration.days(gameArgs.days.toString())).add(
                 duration.hours(gameArgs.hours.toString()).add(duration.minutes(gameArgs.minutes.toString()))
             )
@@ -53,12 +52,12 @@ describe("TicTacToe game contract", function () {
             expect(ownerGame.lastActiveTime).to.above(game.lastActiveTime)
 
             // Should game balance have change
-            const gameBalance = await waffle.provider.getBalance(this.token1.address)
+            const gameBalance = await waffle.provider.getBalance(this.Implement.address)
             const gameBalanceWithComission = BigNumber.from(eth.value).sub(comission)
             expect(gameBalance).to.eq(gameBalanceWithComission)
 
             // Should wallet balance have change
-            const walletBalance = await this.token3.balance()
+            const walletBalance = await this.Wallet.balance()
             expect(walletBalance).to.equal(comission)
         })
 
@@ -69,18 +68,18 @@ describe("TicTacToe game contract", function () {
             const comission = BigNumber.from(gameArgs.tokens).mul(gameArgs.comission).div(100)
 
             // Should approve tictactoe
-            await this.token2.approve(this.token1.address, tokenBet)
+            await this.ERC20.approve(this.Implement.address, tokenBet)
 
-            await this.token1.createGamefromERC20(this.token2.address, gameArgs.days, gameArgs.hours, gameArgs.minutes, tokenBet)
+            await this.Implement.createGamefromERC20(this.ERC20.address, gameArgs.days, gameArgs.hours, gameArgs.minutes, tokenBet)
 
             // Should exist game
-            const ownerGame = await this.token1.games(gameID)
+            const ownerGame = await this.Implement.games(gameID)
 
             expect(ownerGame.betSize).to.equal(gameArgs.tokens)
             expect(ownerGame.owner).to.equal(this.owner.address)
             expect(ownerGame.state).to.equal(game.state.free)
             expect(ownerGame.winner).to.equal(game.sign.free)
-            expect(await this.token1.isERC20Game(gameID)).to.equal(isTokenGame)
+            expect(await this.Implement.isERC20Game(gameID)).to.equal(isTokenGame)
             const waitTime = BigNumber.from(duration.days(gameArgs.days.toString())).add(
                 duration.hours(gameArgs.hours.toString()).add(duration.minutes(gameArgs.minutes.toString()))
             )
@@ -88,12 +87,12 @@ describe("TicTacToe game contract", function () {
             expect(ownerGame.lastActiveTime).to.above(game.lastActiveTime)
 
             // Should game balance have change
-            const gameBalance = await this.token2.balanceOf(this.token1.address)
-            const gameBalanceWithComission = BigNumber.from(gameArgs.tokens).sub(comission)
+            const gameBalance = await this.ERC20.balanceOf(this.Implement.address)
+            const gameBalanceWithComission = BigNumber.from(tokenBet).sub(comission)
             expect(gameBalance).to.equal(gameBalanceWithComission)
 
             // Should wallet balance have change
-            const walletBalance = await this.token2.balanceOf(this.token3.address)
+            const walletBalance = await this.ERC20.balanceOf(this.Wallet.address)
             expect(walletBalance).to.equal(comission)
         })
     })
@@ -105,18 +104,18 @@ describe("TicTacToe game contract", function () {
             const comission = BigNumber.from(eth.value.toString()).mul(gameArgs.comission).div(100)
 
             // Game creation from ETH
-            await this.token1.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
+            await this.Implement.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
 
-            let myGame = await this.token1.games(gameID)
+            let myGame = await this.Implement.games(gameID)
             const creationTime = myGame.lastActiveTime
 
             // Join to game from ETH
-            await this.token1.connect(this.bob).joinGameFromEth(gameID, eth)
+            await this.Implement.connect(this.bob).joinGameFromEth(gameID, eth)
 
             // Refresh game after join
-            myGame = await this.token1.games(gameID)
-            const ownerSign = await this.token1.sign(myGame.owner, gameID)
-            const rivalSign = await this.token1.sign(myGame.rival, gameID)
+            myGame = await this.Implement.games(gameID)
+            const ownerSign = await this.Implement.sign(myGame.owner, gameID)
+            const rivalSign = await this.Implement.sign(myGame.rival, gameID)
 
             // Game's fields should have changed
             expect(myGame.rival).to.equal(this.bob.address)
@@ -126,12 +125,12 @@ describe("TicTacToe game contract", function () {
             expect(rivalSign).to.equal(game.sign.zero)
 
             // Should game balance have change
-            const gameBalance = await waffle.provider.getBalance(this.token1.address)
+            const gameBalance = await waffle.provider.getBalance(this.Implement.address)
             const gameBalanceWithComission = BigNumber.from(eth.value).sub(comission).mul(2)
             expect(gameBalance).to.eq(gameBalanceWithComission)
 
             // Should wallet balance have change
-            const walletBalance = await this.token3.balance()
+            const walletBalance = await this.Wallet.balance()
             const totalBalance = BigNumber.from(comission).mul(2)
             expect(walletBalance).to.equal(totalBalance)
         })
@@ -142,23 +141,23 @@ describe("TicTacToe game contract", function () {
             const comission = BigNumber.from(gameArgs.tokens).mul(gameArgs.comission).div(100)
 
             // Should approve tokens for game
-            await this.token2.transfer(this.bob.address, tokenBet)
-            await this.token2.approve(this.token1.address, tokenBet)
-            await this.token2.connect(this.bob).approve(this.token1.address, tokenBet)
+            await this.ERC20.transfer(this.bob.address, tokenBet)
+            await this.ERC20.approve(this.Implement.address, tokenBet)
+            await this.ERC20.connect(this.bob).approve(this.Implement.address, tokenBet)
 
             // Owner create game from ERC20
-            await this.token1.createGamefromERC20(this.token2.address, gameArgs.days, gameArgs.hours, gameArgs.minutes, tokenBet)
+            await this.Implement.createGamefromERC20(this.ERC20.address, gameArgs.days, gameArgs.hours, gameArgs.minutes, tokenBet)
 
-            let myGame = await this.token1.games(gameID)
+            let myGame = await this.Implement.games(gameID)
             const creationTime = myGame.lastActiveTime
 
             // Join to game from ERC20
-            await this.token1.connect(this.bob).joinGameFromERC20(gameID, this.token2.address)
+            await this.Implement.connect(this.bob).joinGameFromERC20(gameID, this.ERC20.address)
 
             // Refresh game after join
-            myGame = await this.token1.games(gameID)
-            const ownerSign = await this.token1.sign(myGame.owner, gameID)
-            const rivalSign = await this.token1.sign(myGame.rival, gameID)
+            myGame = await this.Implement.games(gameID)
+            const ownerSign = await this.Implement.sign(myGame.owner, gameID)
+            const rivalSign = await this.Implement.sign(myGame.rival, gameID)
 
             // Game's fields should have changed
             expect(myGame.rival).to.equal(this.bob.address)
@@ -168,12 +167,12 @@ describe("TicTacToe game contract", function () {
             expect(rivalSign).to.equal(game.sign.zero)
 
             // Should game balance have change
-            const gameBalance = await this.token2.balanceOf(this.token1.address)
-            const gameBalanceWithComission = BigNumber.from(gameArgs.tokens).sub(comission).mul(2)
+            const gameBalance = await this.ERC20.balanceOf(this.Implement.address)
+            const gameBalanceWithComission = BigNumber.from(tokenBet).sub(comission).mul(2)
             expect(gameBalance).to.equal(gameBalanceWithComission)
 
             // Should wallet balance have change
-            const walletBalance = await this.token2.balanceOf(this.token3.address)
+            const walletBalance = await this.ERC20.balanceOf(this.Wallet.address)
             const totalBalance = BigNumber.from(comission).mul(2)
             expect(walletBalance).to.equal(totalBalance)
         })
@@ -185,30 +184,30 @@ describe("TicTacToe game contract", function () {
             const eth = { value: ethers.utils.parseEther(gameArgs.ether) }
 
             // Game creation from ETH
-            await this.token1.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
+            await this.Implement.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
 
             // Join to game from ETH
-            await this.token1.connect(this.bob).joinGameFromEth(gameID, eth)
+            await this.Implement.connect(this.bob).joinGameFromEth(gameID, eth)
 
-            let myGame = await this.token1.games(gameID)
+            let myGame = await this.Implement.games(gameID)
             const joinTime = myGame.lastActiveTime
             const isCrossMove = myGame.isCrossMove
 
-            let cells = await this.token1.getCell(gameID)
+            let cells = await this.Implement.getCell(gameID)
 
             // Cells should be zero
             expect(cells).to.deep.equal(game.cell)
 
             // Make move
-            await this.token1.step(gameID, gameArgs.x[0], gameArgs.y[0])
+            await this.Implement.step(gameID, gameArgs.x[0], gameArgs.y[0])
 
             // Fields should be different of join time
-            myGame = await this.token1.games(gameID)
+            myGame = await this.Implement.games(gameID)
             expect(myGame.lastActiveTime).to.above(joinTime)
             expect(myGame.isCrossMove).to.equal(!isCrossMove)
 
             // Cell should change
-            cells = await this.token1.getCell(gameID)
+            cells = await this.Implement.getCell(gameID)
             expect(cells[gameArgs.x[0]][gameArgs.y[0]]).to.equal(game.sign.cross)
         })
 
@@ -217,10 +216,10 @@ describe("TicTacToe game contract", function () {
             const eth = { value: ethers.utils.parseEther(gameArgs.ether) }
 
             // Game creation from ETH
-            await this.token1.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
+            await this.Implement.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
 
             // Join to game from ETH
-            await this.token1.connect(this.bob).joinGameFromEth(gameID, eth)
+            await this.Implement.connect(this.bob).joinGameFromEth(gameID, eth)
 
             // Time skip
             await increase(duration.days(gameArgs.days.toString()))
@@ -228,7 +227,7 @@ describe("TicTacToe game contract", function () {
             await increase(duration.minutes(gameArgs.minutes.toString()))
 
             // Make a late move
-            await expect(this.token1.step(gameID, gameArgs.x[0], gameArgs.y[0])).to.be.revertedWith("Move time over")
+            await expect(this.Implement.step(gameID, gameArgs.x[0], gameArgs.y[0])).to.be.revertedWith("Move time over")
         })
 
         it("Should fail if wrong player's move", async function () {
@@ -236,14 +235,13 @@ describe("TicTacToe game contract", function () {
             const eth = { value: ethers.utils.parseEther(gameArgs.ether) }
 
             // Game creation from ETH
-            await this.token1.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
+            await this.Implement.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
 
             // Join to game from ETH
-            await this.token1.connect(this.bob).joinGameFromEth(gameID, eth)
+            await this.Implement.connect(this.bob).joinGameFromEth(gameID, eth)
 
-            // Make move
-            await this.token1.step(gameID, gameArgs.x[0], gameArgs.y[0])
-            await expect(this.token1.connect(this.owner).step(gameID, gameArgs.x[1], gameArgs.y[1])).to.be.revertedWith("Not your move")
+            // Should make first move cross
+            await expect(this.Implement.connect(this.bob).step(gameID, gameArgs.x[0], gameArgs.y[0])).to.be.revertedWith("Not your move")
         })
     })
 
@@ -253,20 +251,20 @@ describe("TicTacToe game contract", function () {
             const eth = { value: ethers.utils.parseEther(gameArgs.ether) }
 
             // Game creation from ETH
-            await this.token1.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
+            await this.Implement.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
 
             // Join to game from ETH
-            await this.token1.connect(this.bob).joinGameFromEth(gameID, eth)
+            await this.Implement.connect(this.bob).joinGameFromEth(gameID, eth)
 
             // Make moves
-            await this.token1.step(gameID, gameArgs.x[0], gameArgs.y[0])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[1])
-            await this.token1.step(gameID, gameArgs.x[1], gameArgs.y[0])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[2], gameArgs.y[2])
-            await this.token1.step(gameID, gameArgs.x[2], gameArgs.y[0])
+            await this.Implement.step(gameID, gameArgs.x[0], gameArgs.y[0])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[1])
+            await this.Implement.step(gameID, gameArgs.x[1], gameArgs.y[0])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[2], gameArgs.y[2])
+            await this.Implement.step(gameID, gameArgs.x[2], gameArgs.y[0])
 
             // Game's fields should update
-            let myGame = await this.token1.games(gameID)
+            let myGame = await this.Implement.games(gameID)
             expect(myGame.state).to.equal(game.state.finished)
             expect(myGame.winner).to.equal(game.sign.cross)
 
@@ -277,12 +275,12 @@ describe("TicTacToe game contract", function () {
 
             // Should owner and game balances have changes
             const ownerBalanceBefore = await waffle.provider.getBalance(this.owner.address)
-            const gameBalanceBefore = await waffle.provider.getBalance(this.token1.address)
+            const gameBalanceBefore = await waffle.provider.getBalance(this.Implement.address)
 
-            await this.token1.withdrawETH(gameID)
+            await this.Implement.withdrawETH(gameID)
 
             const ownerBalanceAfter = await waffle.provider.getBalance(this.owner.address)
-            const gameBalanceAfter = await waffle.provider.getBalance(this.token1.address)
+            const gameBalanceAfter = await waffle.provider.getBalance(this.Implement.address)
 
             expect(ownerBalanceAfter).to.above(BigNumber.from(ownerBalanceBefore))
             expect(gameBalanceAfter).to.equal(BigNumber.from(gameBalanceBefore).sub(totalWinning))
@@ -293,25 +291,25 @@ describe("TicTacToe game contract", function () {
             const tokenBet = gameArgs.tokens
 
             // Should approve tokens for game
-            await this.token2.transfer(this.bob.address, tokenBet)
-            await this.token2.approve(this.token1.address, tokenBet)
-            await this.token2.connect(this.bob).approve(this.token1.address, tokenBet)
+            await this.ERC20.transfer(this.bob.address, tokenBet)
+            await this.ERC20.approve(this.Implement.address, tokenBet)
+            await this.ERC20.connect(this.bob).approve(this.Implement.address, tokenBet)
 
             // Owner create game from ERC20
-            await this.token1.createGamefromERC20(this.token2.address, gameArgs.days, gameArgs.hours, gameArgs.minutes, tokenBet)
+            await this.Implement.createGamefromERC20(this.ERC20.address, gameArgs.days, gameArgs.hours, gameArgs.minutes, tokenBet)
 
             // Join to game from ERC20
-            await this.token1.connect(this.bob).joinGameFromERC20(gameID, this.token2.address)
+            await this.Implement.connect(this.bob).joinGameFromERC20(gameID, this.ERC20.address)
 
             // Make moves
-            await this.token1.step(gameID, gameArgs.x[0], gameArgs.y[0])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[1])
-            await this.token1.step(gameID, gameArgs.x[1], gameArgs.y[0])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[2], gameArgs.y[2])
-            await this.token1.step(gameID, gameArgs.x[2], gameArgs.y[0])
+            await this.Implement.step(gameID, gameArgs.x[0], gameArgs.y[0])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[1])
+            await this.Implement.step(gameID, gameArgs.x[1], gameArgs.y[0])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[2], gameArgs.y[2])
+            await this.Implement.step(gameID, gameArgs.x[2], gameArgs.y[0])
 
             // Game's fields should update
-            let myGame = await this.token1.games(gameID)
+            let myGame = await this.Implement.games(gameID)
             expect(myGame.state).to.equal(game.state.finished)
             expect(myGame.winner).to.equal(game.sign.cross)
 
@@ -321,13 +319,13 @@ describe("TicTacToe game contract", function () {
             const totalWinning = BigNumber.from(winning).mul(winningWithComission).div(100)
 
             // Should owner and game balances have changes
-            const ownerBalanceBefore = await this.token2.balanceOf(this.owner.address)
-            const gameBalanceBefore = await this.token2.balanceOf(this.token1.address)
+            const ownerBalanceBefore = await this.ERC20.balanceOf(this.owner.address)
+            const gameBalanceBefore = await this.ERC20.balanceOf(this.Implement.address)
 
-            await this.token1.withdrawERC20(gameID, this.token2.address)
+            await this.Implement.withdrawERC20(gameID, this.ERC20.address)
 
-            const ownerBalanceAfter = await this.token2.balanceOf(this.owner.address)
-            const gameBalanceAfter = await this.token2.balanceOf(this.token1.address)
+            const ownerBalanceAfter = await this.ERC20.balanceOf(this.owner.address)
+            const gameBalanceAfter = await this.ERC20.balanceOf(this.Implement.address)
 
             expect(ownerBalanceAfter).to.equal(BigNumber.from(ownerBalanceBefore).add(totalWinning))
             expect(gameBalanceAfter).to.equal(BigNumber.from(gameBalanceBefore).sub(totalWinning))
@@ -338,44 +336,43 @@ describe("TicTacToe game contract", function () {
             const eth = { value: ethers.utils.parseEther(gameArgs.ether) }
 
             // Game creation from ETH
-            await this.token1.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
+            await this.Implement.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
 
             // Join to game from ETH
-            await this.token1.connect(this.bob).joinGameFromEth(gameID, eth)
+            await this.Implement.connect(this.bob).joinGameFromEth(gameID, eth)
 
-            // Make move
-            await this.token1.step(gameID, gameArgs.x[1], gameArgs.y[0])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[1])
-            await this.token1.step(gameID, gameArgs.x[2], gameArgs.y[1])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[0], gameArgs.y[0])
-            await this.token1.step(gameID, gameArgs.x[2], gameArgs.y[2])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[2], gameArgs.y[0])
-            await this.token1.step(gameID, gameArgs.x[0], gameArgs.y[2])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[2])
-            await this.token1.step(gameID, gameArgs.x[0], gameArgs.y[1])
+            // Make moves
+            await this.Implement.step(gameID, gameArgs.x[1], gameArgs.y[0])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[1])
+            await this.Implement.step(gameID, gameArgs.x[2], gameArgs.y[1])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[0], gameArgs.y[0])
+            await this.Implement.step(gameID, gameArgs.x[2], gameArgs.y[2])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[2], gameArgs.y[0])
+            await this.Implement.step(gameID, gameArgs.x[0], gameArgs.y[2])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[2])
+            await this.Implement.step(gameID, gameArgs.x[0], gameArgs.y[1])
 
             // Game's fields should update
-            let myGame = await this.token1.games(gameID)
+            let myGame = await this.Implement.games(gameID)
             expect(myGame.state).to.equal(game.state.finished)
             expect(myGame.winner).to.equal(game.sign.draw)
 
             // Should withdraw winning
             const winning = BigNumber.from(myGame.betSize)
             const winningWithComission = 100 - gameArgs.comission
-            const totalWinning = BigNumber.from(winning).mul(winningWithComission).div(100)
             const totalCost = BigNumber.from(winning).mul(2).mul(winningWithComission).div(100)
 
             // Should owner, rival and game balances have changes
             const ownerBalanceBefore = await waffle.provider.getBalance(this.owner.address)
             const rivalBalanceBefore = await waffle.provider.getBalance(this.bob.address)
-            const gameBalanceBefore = await waffle.provider.getBalance(this.token1.address)
+            const gameBalanceBefore = await waffle.provider.getBalance(this.Implement.address)
 
-            await this.token1.withdrawETH(gameID)
-            await this.token1.connect(this.bob).withdrawETH(gameID)
+            await this.Implement.withdrawETH(gameID)
+            await this.Implement.connect(this.bob).withdrawETH(gameID)
 
             const ownerBalanceAfter = await waffle.provider.getBalance(this.owner.address)
             const rivalBalanceAfter = await waffle.provider.getBalance(this.bob.address)
-            const gameBalanceAfter = await waffle.provider.getBalance(this.token1.address)
+            const gameBalanceAfter = await waffle.provider.getBalance(this.Implement.address)
 
             expect(ownerBalanceAfter).to.above(BigNumber.from(ownerBalanceBefore))
             expect(rivalBalanceAfter).to.above(BigNumber.from(rivalBalanceBefore))
@@ -387,15 +384,15 @@ describe("TicTacToe game contract", function () {
             const tokenBet = gameArgs.tokens
 
             // Should approve tokens for game
-            await this.token2.transfer(this.bob.address, tokenBet)
-            await this.token2.approve(this.token1.address, tokenBet)
-            await this.token2.connect(this.bob).approve(this.token1.address, tokenBet)
+            await this.ERC20.transfer(this.bob.address, tokenBet)
+            await this.ERC20.approve(this.Implement.address, tokenBet)
+            await this.ERC20.connect(this.bob).approve(this.Implement.address, tokenBet)
 
             // Owner create game from ERC20
-            await this.token1.createGamefromERC20(this.token2.address, gameArgs.days, gameArgs.hours, gameArgs.minutes, tokenBet)
+            await this.Implement.createGamefromERC20(this.ERC20.address, gameArgs.days, gameArgs.hours, gameArgs.minutes, tokenBet)
 
             // Join to game from ERC20
-            await this.token1.connect(this.bob).joinGameFromERC20(gameID, this.token2.address)
+            await this.Implement.connect(this.bob).joinGameFromERC20(gameID, this.ERC20.address)
 
             // Time skip
             await increase(duration.days(gameArgs.days.toString()))
@@ -403,10 +400,10 @@ describe("TicTacToe game contract", function () {
             await increase(duration.minutes(gameArgs.minutes.toString()))
 
             // Should end game if waiting time over
-            await this.token1.checkGameTime(gameID)
+            await this.Implement.checkGameTime(gameID)
 
             // Game's fields should update
-            let myGame = await this.token1.games(gameID)
+            let myGame = await this.Implement.games(gameID)
             expect(myGame.state).to.equal(game.state.finished)
             expect(myGame.winner).to.equal(game.sign.zero)
         })
@@ -417,10 +414,10 @@ describe("TicTacToe game contract", function () {
             const eth = { value: ethers.utils.parseEther(gameArgs.ether) }
 
             // Game creation from ETH
-            await this.token1.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
+            await this.Implement.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
 
             // Free games
-            const freeGames = await this.token1.freeGames()
+            const freeGames = await this.Implement.freeGames()
             expect(freeGames[0].owner).to.equal(this.owner.address)
             expect(freeGames[0].state).to.equal(game.state.free)
             expect(freeGames[0].winner).to.equal(game.sign.free)
@@ -438,27 +435,27 @@ describe("TicTacToe game contract", function () {
             const eth = { value: ethers.utils.parseEther(gameArgs.ether) }
 
             // Should be 0%
-            expect(await this.token1.getDrawGameStatistic()).to.equal(gameArgs.percent[0])
+            expect(await this.Implement.getDrawGameStatistic()).to.equal(gameArgs.percent[0])
 
             // Game creation from ETH
-            await this.token1.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
+            await this.Implement.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
 
             // Join to game from ETH
-            await this.token1.connect(this.bob).joinGameFromEth(gameID, eth)
+            await this.Implement.connect(this.bob).joinGameFromEth(gameID, eth)
 
             // Make moves
-            await this.token1.step(gameID, gameArgs.x[1], gameArgs.y[0])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[1])
-            await this.token1.step(gameID, gameArgs.x[2], gameArgs.y[1])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[0], gameArgs.y[0])
-            await this.token1.step(gameID, gameArgs.x[2], gameArgs.y[2])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[2], gameArgs.y[0])
-            await this.token1.step(gameID, gameArgs.x[0], gameArgs.y[2])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[2])
-            await this.token1.step(gameID, gameArgs.x[0], gameArgs.y[1])
+            await this.Implement.step(gameID, gameArgs.x[1], gameArgs.y[0])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[1])
+            await this.Implement.step(gameID, gameArgs.x[2], gameArgs.y[1])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[0], gameArgs.y[0])
+            await this.Implement.step(gameID, gameArgs.x[2], gameArgs.y[2])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[2], gameArgs.y[0])
+            await this.Implement.step(gameID, gameArgs.x[0], gameArgs.y[2])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[2])
+            await this.Implement.step(gameID, gameArgs.x[0], gameArgs.y[1])
 
             // Should be 100%
-            expect(await this.token1.getDrawGameStatistic()).to.equal(gameArgs.percent[1])
+            expect(await this.Implement.getDrawGameStatistic()).to.equal(gameArgs.percent[1])
         })
 
         it("Should get games statistic of cross win", async function () {
@@ -466,23 +463,23 @@ describe("TicTacToe game contract", function () {
             const eth = { value: ethers.utils.parseEther(gameArgs.ether) }
 
             // Should be 0%
-            expect(await this.token1.getCrossGameStatistic()).to.equal(gameArgs.percent[0])
+            expect(await this.Implement.getCrossGameStatistic()).to.equal(gameArgs.percent[0])
 
             // Game creation from ETH
-            await this.token1.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
+            await this.Implement.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
 
             // Join to game from ETH
-            await this.token1.connect(this.bob).joinGameFromEth(gameID, eth)
+            await this.Implement.connect(this.bob).joinGameFromEth(gameID, eth)
 
             // Make move
-            await this.token1.step(gameID, gameArgs.x[0], gameArgs.y[0])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[1])
-            await this.token1.step(gameID, gameArgs.x[1], gameArgs.y[0])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[2], gameArgs.y[2])
-            await this.token1.step(gameID, gameArgs.x[2], gameArgs.y[0])
+            await this.Implement.step(gameID, gameArgs.x[0], gameArgs.y[0])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[1])
+            await this.Implement.step(gameID, gameArgs.x[1], gameArgs.y[0])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[2], gameArgs.y[2])
+            await this.Implement.step(gameID, gameArgs.x[2], gameArgs.y[0])
 
             // Should be 100%
-            expect(await this.token1.getCrossGameStatistic()).to.equal(gameArgs.percent[1])
+            expect(await this.Implement.getCrossGameStatistic()).to.equal(gameArgs.percent[1])
         })
 
         it("Should get games statistic of zero win", async function () {
@@ -490,24 +487,24 @@ describe("TicTacToe game contract", function () {
             const eth = { value: ethers.utils.parseEther(gameArgs.ether) }
 
             // Should be 0%
-            expect(await this.token1.getZeroGameStatistic()).to.equal(gameArgs.percent[0])
+            expect(await this.Implement.getZeroGameStatistic()).to.equal(gameArgs.percent[0])
 
             // Game creation from ETH
-            await this.token1.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
+            await this.Implement.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
 
             // Join to game from ETH
-            await this.token1.connect(this.bob).joinGameFromEth(gameID, eth)
+            await this.Implement.connect(this.bob).joinGameFromEth(gameID, eth)
 
             // Make move
-            await this.token1.step(gameID, gameArgs.x[0], gameArgs.y[0])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[1])
-            await this.token1.step(gameID, gameArgs.x[2], gameArgs.y[2])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[2])
-            await this.token1.step(gameID, gameArgs.x[0], gameArgs.y[2])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[0])
+            await this.Implement.step(gameID, gameArgs.x[0], gameArgs.y[0])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[1])
+            await this.Implement.step(gameID, gameArgs.x[2], gameArgs.y[2])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[2])
+            await this.Implement.step(gameID, gameArgs.x[0], gameArgs.y[2])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[0])
 
             // Should be 100%
-            expect(await this.token1.getZeroGameStatistic()).to.equal(gameArgs.percent[1])
+            expect(await this.Implement.getZeroGameStatistic()).to.equal(gameArgs.percent[1])
         })
 
         it("Should get games statistic by address", async function () {
@@ -515,23 +512,23 @@ describe("TicTacToe game contract", function () {
             const eth = { value: ethers.utils.parseEther(gameArgs.ether) }
 
             // Should be 0%
-            expect(await this.token1.getStatisticByAddress(this.owner.address)).to.equal(gameArgs.percent[0])
+            expect(await this.Implement.getStatisticByAddress(this.owner.address)).to.equal(gameArgs.percent[0])
 
             // Game creation from ETH
-            await this.token1.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
+            await this.Implement.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
 
             // Join to game from ETH
-            await this.token1.connect(this.bob).joinGameFromEth(gameID, eth)
+            await this.Implement.connect(this.bob).joinGameFromEth(gameID, eth)
 
             // Make move
-            await this.token1.step(gameID, gameArgs.x[0], gameArgs.y[0])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[1])
-            await this.token1.step(gameID, gameArgs.x[1], gameArgs.y[0])
-            await this.token1.connect(this.bob).step(gameID, gameArgs.x[2], gameArgs.y[2])
-            await this.token1.step(gameID, gameArgs.x[2], gameArgs.y[0])
+            await this.Implement.step(gameID, gameArgs.x[0], gameArgs.y[0])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[1], gameArgs.y[1])
+            await this.Implement.step(gameID, gameArgs.x[1], gameArgs.y[0])
+            await this.Implement.connect(this.bob).step(gameID, gameArgs.x[2], gameArgs.y[2])
+            await this.Implement.step(gameID, gameArgs.x[2], gameArgs.y[0])
 
             // Should be 100%
-            expect(await this.token1.getStatisticByAddress(this.owner.address)).to.equal(gameArgs.percent[1])
+            expect(await this.Implement.getStatisticByAddress(this.owner.address)).to.equal(gameArgs.percent[1])
         })
     })
 })
@@ -550,11 +547,11 @@ describe("Multisig Wallet", function () {
             const txValue = eth.value
 
             // Game creation from ETH
-            await this.token1.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
+            await this.Implement.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
 
             // Should submit
-            await this.token3.submit(txReceiver, txValue)
-            const transaction = await this.token3.transactions(txId)
+            await this.Wallet.submit(txReceiver, txValue)
+            const transaction = await this.Wallet.transactions(txId)
             expect(transaction.to).to.equal(txReceiver)
             expect(transaction.value).to.equal(txValue)
             expect(transaction.executed).to.equal(false)
@@ -568,17 +565,17 @@ describe("Multisig Wallet", function () {
             const tokenBet = gameArgs.tokens
 
             // Should approve tokens for game
-            await this.token2.approve(this.token1.address, tokenBet)
+            await this.ERC20.approve(this.Implement.address, tokenBet)
 
             // Owner create game from ERC20
-            await this.token1.createGamefromERC20(this.token2.address, gameArgs.days, gameArgs.hours, gameArgs.minutes, tokenBet)
+            await this.Implement.createGamefromERC20(this.ERC20.address, gameArgs.days, gameArgs.hours, gameArgs.minutes, tokenBet)
 
             // Should submit
-            await this.token3.submitERC20(txReceiver, txValue, this.token2.address)
-            const transaction = await this.token3.transactions(txId)
-            const tokenTx = await this.token3.tokenTx(txId)
+            await this.Wallet.submitERC20(txReceiver, txValue, this.ERC20.address)
+            const transaction = await this.Wallet.transactions(txId)
+            const tokenTx = await this.Wallet.tokenTx(txId)
             expect(tokenTx.isERC20Tx).to.equal(true)
-            expect(tokenTx.tokenAddress).to.equal(this.token2.address)
+            expect(tokenTx.tokenAddress).to.equal(this.ERC20.address)
             expect(transaction.to).to.equal(txReceiver)
             expect(transaction.value).to.equal(txValue)
             expect(transaction.executed).to.equal(false)
@@ -593,14 +590,14 @@ describe("Multisig Wallet", function () {
             const txValue = eth.value
 
             // Game creation from ETH
-            await this.token1.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
+            await this.Implement.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
 
             // Submit
-            await this.token3.submit(txReceiver, txValue)
+            await this.Wallet.submit(txReceiver, txValue)
 
             // Approve
-            await this.token3.approve(txId)
-            const isApproved = await this.token3.approved(txId, this.owner.address)
+            await this.Wallet.approve(txId)
+            const isApproved = await this.Wallet.approved(txId, this.owner.address)
             expect(isApproved).to.equal(true)
         })
     })
@@ -613,24 +610,25 @@ describe("Multisig Wallet", function () {
             const txValue = eth.value
 
             // Game creation from ETH
-            await this.token1.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
+            await this.Implement.createGameFromEth(gameArgs.days, gameArgs.hours, gameArgs.minutes, eth)
 
             // Submit
             const totalfunds = BigNumber.from(txValue).mul(gameArgs.comission).div(100)
-            await this.token3.submit(txReceiver, totalfunds)
+            await this.Wallet.submit(txReceiver, totalfunds)
 
             // Approve transaction
-            await this.token3.approve(txId)
-            await this.token3.connect(this.bob).approve(txId)
+            await this.Wallet.approve(txId)
+            await this.Wallet.connect(this.alice).approve(txId)
 
             // Should owner balances have changes
             const ownerBalanceBefore = await waffle.provider.getBalance(this.owner.address)
-            const walletBalanceBefore = await this.token3.balance()
+            const walletBalanceBefore = await this.Wallet.balance()
+
             // Execute
-            await this.token3.execute(txId)
+            await this.Wallet.execute(txId)
 
             const ownerBalanceAfter = await waffle.provider.getBalance(this.owner.address)
-            const walletBalanceAfter = await this.token3.balance()
+            const walletBalanceAfter = await this.Wallet.balance()
             expect(ownerBalanceAfter).to.above(BigNumber.from(ownerBalanceBefore))
             expect(walletBalanceAfter).to.equal(BigNumber.from(walletBalanceBefore).sub(totalfunds))
         })
@@ -642,26 +640,27 @@ describe("Multisig Wallet", function () {
             const totalfunds = BigNumber.from(txValue).mul(gameArgs.comission).div(100)
 
             // Should approve tokens for game
-            await this.token2.approve(this.token1.address, gameArgs.tokens)
+            await this.ERC20.approve(this.Implement.address, gameArgs.tokens)
 
             // Owner create game from ERC20
-            await this.token1.createGamefromERC20(this.token2.address, gameArgs.days, gameArgs.hours, gameArgs.minutes, txValue)
+            await this.Implement.createGamefromERC20(this.ERC20.address, gameArgs.days, gameArgs.hours, gameArgs.minutes, txValue)
 
             // Submit
-            await this.token3.submitERC20(txReceiver, totalfunds, this.token2.address)
+            await this.Wallet.submitERC20(txReceiver, totalfunds, this.ERC20.address)
 
             // Approve transaction
-            await this.token3.approve(txId)
-            await this.token3.connect(this.bob).approve(txId)
+            await this.Wallet.approve(txId)
+            await this.Wallet.connect(this.alice).approve(txId)
 
-            // Should owner balances have changes
-            const reciverBalanceBefore = await this.token2.balanceOf(txReceiver)
-            const walletBalanceBefore = await this.token2.balanceOf(this.token3.address)
+            // Should owner and wallet balances have changes
+            const reciverBalanceBefore = await this.ERC20.balanceOf(txReceiver)
+            const walletBalanceBefore = await this.ERC20.balanceOf(this.Wallet.address)
+
             // Execute
-            await this.token3.execute(txId)
+            await this.Wallet.execute(txId)
 
-            const reciverBalanceAfter = await this.token2.balanceOf(txReceiver)
-            const walletBalanceAfter = await this.token2.balanceOf(this.token3.address)
+            const reciverBalanceAfter = await this.ERC20.balanceOf(txReceiver)
+            const walletBalanceAfter = await this.ERC20.balanceOf(this.Wallet.address)
             expect(reciverBalanceAfter).to.equal(BigNumber.from(reciverBalanceBefore).add(totalfunds))
             expect(walletBalanceAfter).to.equal(BigNumber.from(walletBalanceBefore).sub(totalfunds))
         })

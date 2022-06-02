@@ -13,7 +13,7 @@ module.exports = async function (hre: HardhatRuntimeEnvironment) {
 
     const Wallet = await deployments.get("Wallet")
 
-    await deploy("TicTacToe", {
+    /* await deploy("TicTacToe", {
         from: deployer,
         log: true,
         proxy: {
@@ -27,7 +27,7 @@ module.exports = async function (hre: HardhatRuntimeEnvironment) {
                 },
             },
         },
-    })
+    }) */
 }
 
 module.exports.tags = ["TicTacToe"]
