@@ -1,8 +1,9 @@
 # Контракты
 
-TicTacToe - игра крестики-нолики.<br>
+TicTacToe - игра крестики-нолики<br>
 Wallet - Multisig Wallet<br>
 ERC20Mock - ERC20 токен<br>
+TicTacProxy - промежуточный контракт для игры<br>
 
 # Адреса контрактов в Rinkeby
 

@@ -84,10 +84,13 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         _;
     }
 
+    /// @dev Function instead of constructor
     function initialize(address _walletAddress) external initializer {
         gameId = 0;
         commission = 5;
         wallet = _walletAddress;
+        /// @dev Initialize owner, whos can upgrade this contract
+        __Ownable_init();
     }
 
     /// @notice Create new game from ether
@@ -365,5 +368,6 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         return SquareState.free;
     }
 
+    /// @dev Turn on upgradeble of this contract
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

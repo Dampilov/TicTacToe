@@ -16,7 +16,6 @@ declare module "mocha" {
         // CONTRACTS
         Wallet: Wallet
         ERC20: ERC20Mock
-        Implementation: TicTacToe
         Proxy: TicTacProxy
         Implement: Contract
     }

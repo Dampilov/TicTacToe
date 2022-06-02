@@ -16,7 +16,6 @@ export async function prepareTicTacToeTokens(thisObject: Mocha.Context, signer: 
     const TicTacToeFactory = await ethers.getContractFactory("TicTacToe")
     const ERC20Factory = await ethers.getContractFactory("ERC20Mock")
     const WalletFactory = await ethers.getContractFactory("Wallet")
-    const TicTacProxyFactory = await ethers.getContractFactory("TicTacProxy")
 
     const Wallet = await WalletFactory.connect(signer).deploy([thisObject.owner.address, thisObject.alice.address], 2)
     await Wallet.deployed()
@@ -26,13 +25,22 @@ export async function prepareTicTacToeTokens(thisObject: Mocha.Context, signer: 
     await ERC20Mock.deployed()
     thisObject.ERC20 = ERC20Mock
 
-    const TicTacToe = await TicTacToeFactory.connect(signer).deploy()
-    await TicTacToe.deployed()
-    thisObject.Implementation = TicTacToe
+    const Implement = await upgrades.deployProxy(TicTacToeFactory.connect(signer) as ContractFactory, [Wallet.address], {
+        initializer: "initialize",
+        kind: "uups",
+    })
+    await Implement.deployed()
+    thisObject.Implement = Implement
+}
 
-    const TicTacProxy = await TicTacProxyFactory.connect(signer).deploy(TicTacToe.address)
-    await ERC20Mock.deployed()
-    thisObject.Proxy = TicTacProxy
+export async function prepareProxyTokens(thisObject: Mocha.Context, signer: SignerWithAddress) {
+    const TicTacToeFactory = await ethers.getContractFactory("TicTacToe")
+    const WalletFactory = await ethers.getContractFactory("Wallet")
+    const TicTacProxyFactory = await ethers.getContractFactory("TicTacProxy")
+
+    const Wallet = await WalletFactory.connect(signer).deploy([thisObject.owner.address, thisObject.alice.address], 2)
+    await Wallet.deployed()
+    thisObject.Wallet = Wallet
 
     const Implement = await upgrades.deployProxy(TicTacToeFactory.connect(signer) as ContractFactory, [Wallet.address], {
         initializer: "initialize",
@@ -40,6 +48,10 @@ export async function prepareTicTacToeTokens(thisObject: Mocha.Context, signer: 
     })
     await Implement.deployed()
     thisObject.Implement = Implement
+
+    const TicTacProxy = await TicTacProxyFactory.connect(signer).deploy(Implement.address)
+    await TicTacProxy.deployed()
+    thisObject.Proxy = TicTacProxy
 }
 
 export const gameArgs = {
