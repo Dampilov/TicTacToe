@@ -93,6 +93,10 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         __Ownable_init();
     }
 
+    function changeCommision(uint256 _newCommision) external onlyOwner {
+        commission = _newCommision;
+    }
+
     /// @notice Create new game from ether
     /// @param _days, _hours, _minutes - move waiting time
     function createGameFromEth(
@@ -101,7 +105,6 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint8 _minutes
     ) external payable {
         require(_days + _hours + _minutes > 0, "Time not set");
-        require(msg.value >= 0.001 ether, "Not enaught ETH");
         (bool success, ) = address(wallet).call{value: (msg.value * commission) / 100}("");
         require(success, "Failed to send Ether");
         _createGame(_days, _hours, _minutes, msg.value);
@@ -117,7 +120,6 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 _betAmount
     ) external {
         require(_days + _hours + _minutes > 0, "Time not set");
-        require(_betAmount >= 5, "Not enaught tokens");
         ERC20(_token).transferFrom(msg.sender, address(this), _betAmount);
         ERC20(_token).transfer(address(wallet), (_betAmount * commission) / 100);
         MultisigWallet(wallet).receiveERC20(_token, _betAmount);
