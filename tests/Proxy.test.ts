@@ -12,12 +12,12 @@ describe("TicTac proxy contract", function () {
     })
 
     describe("Deployment", function () {
-        it("Should TicTacToe be deployed", async function () {
+        it("Should proxy be deployed", async function () {
             expect(await this.Implement.address).to.be.properAddress
         })
 
-        it("Should TicTacProxy be deployed", async function () {
-            expect(await this.Proxy.address).to.be.properAddress
+        it("Should be correct wallet address in proxy", async function () {
+            expect(await this.Implement.wallet()).to.equal(this.Wallet.address)
         })
     })
 

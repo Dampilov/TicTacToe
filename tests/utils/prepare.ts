@@ -36,7 +36,6 @@ export async function prepareTicTacToeTokens(thisObject: Mocha.Context, signer: 
 export async function prepareProxyTokens(thisObject: Mocha.Context, signer: SignerWithAddress) {
     const TicTacToeFactory = await ethers.getContractFactory("TicTacToe")
     const WalletFactory = await ethers.getContractFactory("Wallet")
-    const TicTacProxyFactory = await ethers.getContractFactory("TicTacProxy")
 
     const Wallet = await WalletFactory.connect(signer).deploy([thisObject.owner.address, thisObject.alice.address], 2)
     await Wallet.deployed()
@@ -48,10 +47,6 @@ export async function prepareProxyTokens(thisObject: Mocha.Context, signer: Sign
     })
     await Implement.deployed()
     thisObject.Implement = Implement
-
-    const TicTacProxy = await TicTacProxyFactory.connect(signer).deploy(Implement.address)
-    await TicTacProxy.deployed()
-    thisObject.Proxy = TicTacProxy
 }
 
 export const gameArgs = {

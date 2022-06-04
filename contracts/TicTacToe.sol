@@ -12,7 +12,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     uint256 gameId;
-    uint256 commission;
+    uint256 public comission;
     address public wallet;
 
     mapping(uint256 => Game) public games;
@@ -87,14 +87,14 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     /// @dev Function instead of constructor
     function initialize(address _walletAddress) external initializer {
         gameId = 0;
-        commission = 5;
+        comission = 5;
         wallet = _walletAddress;
         /// @dev Initialize owner, whos can upgrade this contract
         __Ownable_init();
     }
 
     function changeCommision(uint256 _newCommision) external onlyOwner {
-        commission = _newCommision;
+        comission = _newCommision;
     }
 
     /// @notice Create new game from ether
@@ -105,8 +105,6 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint8 _minutes
     ) external payable {
         require(_days + _hours + _minutes > 0, "Time not set");
-        (bool success, ) = address(wallet).call{value: (msg.value * commission) / 100}("");
-        require(success, "Failed to send Ether");
         _createGame(_days, _hours, _minutes, msg.value);
     }
 
@@ -121,8 +119,6 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     ) external {
         require(_days + _hours + _minutes > 0, "Time not set");
         ERC20(_token).transferFrom(msg.sender, address(this), _betAmount);
-        ERC20(_token).transfer(address(wallet), (_betAmount * commission) / 100);
-        MultisigWallet(wallet).receiveERC20(_token, _betAmount);
         isERC20Game[gameId] = true;
         _createGame(_days, _hours, _minutes, _betAmount);
     }
@@ -131,9 +127,6 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     function joinGameFromEth(uint256 _gameId) external payable GameIsFree(_gameId) GameExist(_gameId) {
         require(msg.sender != games[_gameId].owner, "Can't play with yourself");
         require(msg.value == games[_gameId].betSize, "Not correct bet size");
-
-        (bool success, ) = address(wallet).call{value: (msg.value * commission) / 100}("");
-        require(success, "Failed to send Ether");
         _joinGame(_gameId);
     }
 
@@ -141,10 +134,7 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     function joinGameFromERC20(uint256 _gameId, address _token) external GameIsFree(_gameId) GameExist(_gameId) {
         require(msg.sender != games[_gameId].owner, "Can't play with yourself");
         require(isERC20Game[_gameId], "Bet by ether");
-
         ERC20(_token).transferFrom(msg.sender, address(this), games[_gameId].betSize);
-        ERC20(_token).transfer(address(wallet), (games[_gameId].betSize * commission) / 100);
-        MultisigWallet(wallet).receiveERC20(_token, games[_gameId].betSize);
         _joinGame(_gameId);
     }
 
@@ -192,31 +182,41 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         uint256 withdrawCount;
         delete canWithdraw[_gameId][msg.sender];
         if (games[_gameId].winner == SquareState.draw) {
-            withdrawCount = (games[_gameId].betSize * (100 - commission)) / 100;
+            withdrawCount = (games[_gameId].betSize * (100 - comission)) / 100;
             payable(msg.sender).transfer(withdrawCount);
             emit Withdraw(_gameId, msg.sender, withdrawCount);
         }
         if (games[_gameId].winner == sign[msg.sender][_gameId]) {
-            withdrawCount = (2 * games[_gameId].betSize * (100 - commission)) / 100;
+            withdrawCount = (2 * games[_gameId].betSize * (100 - comission)) / 100;
             payable(msg.sender).transfer(withdrawCount);
-            emit Withdraw(_gameId, msg.sender, withdrawCount * 2);
+            emit Withdraw(_gameId, msg.sender, withdrawCount);
+        }
+        if (msg.sender == owner()) {
+            (bool success, ) = wallet.call{value: (2 * games[_gameId].betSize * comission) / 100}("");
+            require(success, "Failed to send Ether");
         }
     }
 
     /// @notice Withdraw ERC20 tokens, if you won or game end in draw
-    function withdrawERC20(uint256 _gameId, address token) external GameIsFinished(_gameId) onlyPlayer(_gameId) {
+    function withdrawERC20(uint256 _gameId, address _token) external GameIsFinished(_gameId) onlyPlayer(_gameId) {
         require(isERC20Game[_gameId], "Bet by ether");
         require(canWithdraw[_gameId][msg.sender], "Can't withdraw");
         uint256 withdrawCount;
-        withdrawCount = (games[_gameId].betSize * (100 - commission)) / 100;
         delete canWithdraw[_gameId][msg.sender];
         if (games[_gameId].winner == SquareState.draw) {
-            ERC20(token).transfer(msg.sender, withdrawCount);
+            withdrawCount = (games[_gameId].betSize * (100 - comission)) / 100;
+            ERC20(_token).transfer(msg.sender, withdrawCount);
             emit Withdraw(_gameId, msg.sender, withdrawCount);
         }
         if (games[_gameId].winner == sign[msg.sender][_gameId]) {
-            ERC20(token).transfer(msg.sender, withdrawCount * 2);
-            emit Withdraw(_gameId, msg.sender, withdrawCount * 2);
+            withdrawCount = (2 * games[_gameId].betSize * (100 - comission)) / 100;
+            ERC20(_token).transfer(msg.sender, withdrawCount);
+            emit Withdraw(_gameId, msg.sender, withdrawCount);
+        }
+        if (msg.sender == owner()) {
+            withdrawCount = (2 * games[_gameId].betSize * comission) / 100;
+            ERC20(_token).transfer(wallet, withdrawCount);
+            MultisigWallet(wallet).receiveERC20(_token, withdrawCount);
         }
     }
 
@@ -290,7 +290,7 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
         if (winner == SquareState.draw) {
             canWithdraw[_gameId][games[_gameId].owner] = true;
             canWithdraw[_gameId][games[_gameId].rival] = true;
-            emit GameResult(_gameId, winner, address(0), block.timestamp);
+            canWithdraw[_gameId][owner()] = true;
         } else {
             if (winner == SquareState.cross) {
                 canWithdraw[_gameId][games[_gameId].owner] = true;
@@ -300,6 +300,7 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
                 emit GameResult(_gameId, winner, games[_gameId].rival, block.timestamp);
             }
         }
+        canWithdraw[_gameId][owner()] = true;
     }
 
     /// @dev Get number of all games and number of games where the corresponding sign won
