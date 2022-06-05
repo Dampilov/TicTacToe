@@ -321,6 +321,42 @@ describe("TicTacToe game contract", function () {
             expect(gameBalanceAfter).to.equal(BigNumber.from(gameBalanceBefore).sub(totalWinning))
         })
 
+        it("Should have access to cancel game if no one has joined within waiting time", async function () {
+            const gameID = gameArgs.gameID
+            const tokenBet = gameArgs.tokens
+
+            // Should approve tokens for game
+            await this.ERC20.approve(this.Implement.address, tokenBet)
+
+            // Owner create game from ERC20
+            await this.Implement.createGamefromERC20(this.ERC20.address, gameArgs.days, gameArgs.hours, gameArgs.minutes, tokenBet)
+
+            // Time skip
+            await increase(duration.days(gameArgs.days.toString()))
+            await increase(duration.hours(gameArgs.hours.toString()))
+            await increase(duration.minutes(gameArgs.minutes.toString()))
+
+            // Should can withdraw if waiting time over
+            await this.Implement.cancelGame(gameID)
+
+            // Should withdraw with comission
+            const winning = BigNumber.from(tokenBet)
+            const winningWithComission = 100 - gameArgs.comission
+            const totalWinning = BigNumber.from(winning).mul(winningWithComission).div(100)
+
+            // Should withdraw, than owner and game balances should have changes
+            const ownerBalanceBefore = await this.ERC20.balanceOf(this.owner.address)
+            const gameBalanceBefore = await this.ERC20.balanceOf(this.Implement.address)
+
+            await this.Implement.withdrawERC20(gameID, this.ERC20.address)
+
+            const ownerBalanceAfter = await this.ERC20.balanceOf(this.owner.address)
+            const gameBalanceAfter = await this.ERC20.balanceOf(this.Implement.address)
+
+            expect(ownerBalanceAfter).to.equal(BigNumber.from(ownerBalanceBefore).add(totalWinning))
+            expect(gameBalanceAfter).to.equal(BigNumber.from(gameBalanceBefore).sub(totalWinning))
+        })
+
         it("Should send comission to wallet", async function () {
             const gameID = gameArgs.gameID
             const eth = { value: ethers.utils.parseEther(gameArgs.ether) }
