@@ -6,11 +6,20 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /// @title TicTacToe contract
 /// @author Dampilov D.
 
 contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
+    /// @notice The EIP-712 typehash for the contract's domain
+    bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+    /// @notice The EIP-712 typehash for the permit struct used by the contract
+    bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address participant,uint256 value,uint256 nonce,uint256 deadline)");
+    uint256 permitNonce;
+    uint256 public permitDeadline;
+    bytes32 domainSeparator;
+
     uint256 gameId;
     uint256 public comission;
     address public wallet;
@@ -22,6 +31,19 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     /// @notice Sign for gamer, cross or zero
     mapping(address => mapping(uint256 => SquareState)) public sign;
+
+    struct EIP712Domain {
+        string name;
+        uint256 chainId;
+        address verifyingContract;
+    }
+
+    struct Permit {
+        address participant;
+        uint256 value;
+        uint256 nonce;
+        uint256 deadline;
+    }
 
     enum GameState {
         free,
@@ -86,15 +108,26 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
 
     /// @dev Function instead of constructor
     function initialize(address _walletAddress) external initializer {
-        gameId = 0;
         comission = 5;
         wallet = _walletAddress;
+        domainSeparator = keccak256(abi.encode(DOMAIN_TYPEHASH, keccak256(bytes("TicTacToe")), block.chainid, address(this)));
         /// @dev Initialize owner, whos can upgrade this contract
         __Ownable_init();
     }
 
-    function changeCommision(uint256 _newCommision) external onlyOwner {
+    /// @dev Change comission may only if sender have signature of owner
+    function changeCommision(uint256 _newCommision, bytes memory _signature) external {
+        require(block.timestamp < permitDeadline, "Permit life-time is over");
+        bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, msg.sender, _newCommision, permitNonce, permitDeadline));
+        permitNonce++;
+        bytes32 ethSignatureMessage = ECDSA.toTypedDataHash(domainSeparator, structHash);
+        require(ECDSA.recover(ethSignatureMessage, _signature) == owner(), "No permission");
         comission = _newCommision;
+    }
+
+    /// @notice Function for owner, to set the permition time since today
+    function setPermitValidDays(uint256 _days) external onlyOwner {
+        permitDeadline = block.timestamp + (_days * 1 days);
     }
 
     /// @notice Create new game from ether

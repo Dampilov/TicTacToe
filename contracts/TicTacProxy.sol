@@ -49,10 +49,6 @@ contract TicTacProxy is ERC1967Proxy {
 
     constructor(address implementation) ERC1967Proxy(implementation, "") {}
 
-    function upgradeImplementation(address _newImplementation) external {
-        _upgradeTo(_newImplementation);
-    }
-
     function getImplementation() external view returns (address) {
         return _implementation();
     }

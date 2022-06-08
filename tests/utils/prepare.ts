@@ -49,6 +49,30 @@ export async function prepareProxyTokens(thisObject: Mocha.Context, signer: Sign
     thisObject.Implement = Implement
 }
 
+export const digital = {
+    types: {
+        EIP712Domain: [
+            { name: "name", type: "string" },
+            { name: "chainId", type: "uint256" },
+            { name: "verifyingContract", type: "address" },
+        ],
+        Permit: [
+            { name: "participant", type: "address" },
+            { name: "value", type: "uint256" },
+            { name: "nonce", type: "uint256" },
+            { name: "deadline", type: "uint256" },
+        ],
+    },
+    domain: {
+        name: "TicTacToe",
+        chainId: 31337,
+        verifyingContract: "",
+    },
+    primaryType: "Permit",
+    newComission: 10,
+    permitValidDays: 1,
+}
+
 export const gameArgs = {
     gameID: 0,
     days: 0,
