@@ -119,9 +119,9 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     function changeCommision(uint256 _newCommision, bytes memory _signature) external {
         require(block.timestamp < permitDeadline, "Permit life-time is over");
         bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, msg.sender, _newCommision, permitNonce, permitDeadline));
-        permitNonce++;
         bytes32 ethSignatureMessage = ECDSA.toTypedDataHash(domainSeparator, structHash);
         require(ECDSA.recover(ethSignatureMessage, _signature) == owner(), "No permission");
+        permitNonce++;
         comission = _newCommision;
     }
 
