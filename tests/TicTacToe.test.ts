@@ -326,10 +326,17 @@ describe("TicTacToe game contract", function () {
             const tokenBet = gameArgs.tokens
 
             // Should approve tokens for game
-            await this.ERC20.approve(this.Implement.address, tokenBet)
+            await this.ERC20.transfer(this.bob.address, tokenBet)
+            await this.ERC20.connect(this.bob).approve(this.Implement.address, tokenBet)
 
             // Owner create game from ERC20
-            await this.Implement.createGamefromERC20(this.ERC20.address, gameArgs.days, gameArgs.hours, gameArgs.minutes, tokenBet)
+            await this.Implement.connect(this.bob).createGamefromERC20(
+                this.ERC20.address,
+                gameArgs.days,
+                gameArgs.hours,
+                gameArgs.minutes,
+                tokenBet
+            )
 
             // Time skip
             await increase(duration.days(gameArgs.days.toString()))
@@ -337,7 +344,7 @@ describe("TicTacToe game contract", function () {
             await increase(duration.minutes(gameArgs.minutes.toString()))
 
             // Should can withdraw if waiting time over
-            await this.Implement.cancelGame(gameID)
+            await this.Implement.connect(this.bob).cancelGame(gameID)
 
             // Should withdraw with comission
             const winning = BigNumber.from(tokenBet)
@@ -345,12 +352,12 @@ describe("TicTacToe game contract", function () {
             const totalWinning = BigNumber.from(winning).mul(winningWithComission).div(100)
 
             // Should withdraw, than owner and game balances should have changes
-            const ownerBalanceBefore = await this.ERC20.balanceOf(this.owner.address)
+            const ownerBalanceBefore = await this.ERC20.balanceOf(this.bob.address)
             const gameBalanceBefore = await this.ERC20.balanceOf(this.Implement.address)
 
-            await this.Implement.withdrawERC20(gameID, this.ERC20.address)
+            await this.Implement.connect(this.bob).withdrawERC20(gameID, this.ERC20.address)
 
-            const ownerBalanceAfter = await this.ERC20.balanceOf(this.owner.address)
+            const ownerBalanceAfter = await this.ERC20.balanceOf(this.bob.address)
             const gameBalanceAfter = await this.ERC20.balanceOf(this.Implement.address)
 
             expect(ownerBalanceAfter).to.equal(BigNumber.from(ownerBalanceBefore).add(totalWinning))

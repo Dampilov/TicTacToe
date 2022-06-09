@@ -248,18 +248,16 @@ contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
             withdrawCount = (games[_gameId].betSize * (100 - comission)) / 100;
             ERC20(_token).transfer(msg.sender, withdrawCount);
             emit Withdraw(_gameId, msg.sender, withdrawCount);
-        } else {
-            if (games[_gameId].winner == sign[msg.sender][_gameId]) {
-                withdrawCount = (2 * games[_gameId].betSize * (100 - comission)) / 100;
-                ERC20(_token).transfer(msg.sender, withdrawCount);
-                emit Withdraw(_gameId, msg.sender, withdrawCount);
-            } else {
-                if (msg.sender == owner()) {
-                    withdrawCount = (2 * games[_gameId].betSize * comission) / 100;
-                    ERC20(_token).transfer(wallet, withdrawCount);
-                    MultisigWallet(wallet).receiveERC20(_token, withdrawCount);
-                }
-            }
+        }
+        if (games[_gameId].winner == sign[msg.sender][_gameId]) {
+            withdrawCount = (2 * games[_gameId].betSize * (100 - comission)) / 100;
+            ERC20(_token).transfer(msg.sender, withdrawCount);
+            emit Withdraw(_gameId, msg.sender, withdrawCount);
+        }
+        if (msg.sender == owner()) {
+            withdrawCount = (2 * games[_gameId].betSize * comission) / 100;
+            ERC20(_token).transfer(wallet, withdrawCount);
+            MultisigWallet(wallet).receiveERC20(_token, withdrawCount);
         }
     }
 
