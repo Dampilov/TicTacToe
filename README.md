@@ -1,15 +1,16 @@
 # Контракты
 
-TicTacToe - игра крестики-нолики<br>
+TicTacToe - логический контракт игры крестики-нолики<br>
 Wallet - Multisig Wallet<br>
 ERC20Mock - ERC20 токен<br>
 TicTacProxy - промежуточный контракт для игры<br>
 
-# Адреса контрактов в Rinkeby
+# Адреса контрактов в Ropsten
 
-TicTacToe - 0x889cBcBbEFa0FEc058C70fDD38e7c8Cf1500aB19<br>
-Wallet - 0x386D6fDB4785B709f6122BD69965560a148eAc83<br>
-ERC20Mock - 0xce9Ce076CdBA678E36A1b650f3e691f12b137F9A<br>
+Proxy - 0x2B92E7f9F9b9C4C3198D2959543250c460Cac03F<br>
+Implementation - 0xB55557a3D74FC5cD0A1250c4C7E0aA76F5E7Ee78<br>
+Wallet - 0x4F2e62fb00B5D07d411ee3da5A130f11Ee1F8861<br>
+ERC20Mock - 0x42117f0822f6fA9c094a6c6a44D793B39ad9CDE7<br>
 
 ## Hardhat tasks:
 

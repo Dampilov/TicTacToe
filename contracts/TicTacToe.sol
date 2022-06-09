@@ -13,24 +13,24 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract TicTacToe is Initializable, UUPSUpgradeable, OwnableUpgradeable {
     /// @notice The EIP-712 typehash for the contract's domain
-    bytes32 constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
+    bytes32 public constant DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,uint256 chainId,address verifyingContract)");
     /// @notice The EIP-712 typehash for the permit struct used by the contract
-    bytes32 constant PERMIT_TYPEHASH = keccak256("Permit(address participant,uint256 value,uint256 nonce,uint256 deadline)");
+    bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address participant,uint256 value,uint256 nonce,uint256 deadline)");
     uint256 permitNonce;
-    uint256 permitDeadline;
+    uint256 public permitDeadline;
     bytes32 domainSeparator;
 
     uint256 gameId;
-    uint256 comission;
-    address wallet;
+    uint256 public comission;
+    address public wallet;
 
-    mapping(uint256 => Game) games;
-    mapping(uint256 => bool) isERC20Game;
+    mapping(uint256 => Game) public games;
+    mapping(uint256 => bool) public isERC20Game;
     mapping(uint256 => mapping(address => bool)) canWithdraw;
-    mapping(uint256 => SquareState[3][3]) cells;
+    mapping(uint256 => SquareState[3][3]) public cells;
 
     /// @notice Sign for gamer, cross or zero
-    mapping(address => mapping(uint256 => SquareState)) sign;
+    mapping(address => mapping(uint256 => SquareState)) public sign;
 
     struct EIP712Domain {
         string name;
